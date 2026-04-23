@@ -1,0 +1,38 @@
+spring:
+  main:
+    web-application-type: servlet
+  ai:
+    mcp:
+      server:
+        enabled: false
+        name: sparsesim
+        version: ${APP_VERSION:0.0.1-SNAPSHOT}
+        type: SYNC
+        protocol: SSE
+        sse-message-endpoint: /mcp/message
+        annotation-scanner:
+          enabled: true
+
+# Default index directory (can be overridden via environment variable)
+indexdir: ${INDEX_DIR:/app/index}
+
+---
+spring:
+  config:
+    activate:
+      on-profile: mcp
+  ai:
+    mcp:
+      server:
+        enabled: true
+
+---
+spring:
+  config:
+    activate:
+      on-profile: indexer
+  main:
+    web-application-type: none
+
+# CLI profile index directory
+indexdir: ${INDEX_DIR:./index}
