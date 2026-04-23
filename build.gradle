@@ -1,0 +1,78 @@
+plugins {
+    id 'java'
+    id 'groovy'
+    id 'org.springframework.boot' version '3.5.3'
+    id 'io.spring.dependency-management' version '1.1.7'
+}
+
+group = 'com.example'
+version = '0.0.1-SNAPSHOT'
+
+java {
+    toolchain { languageVersion = JavaLanguageVersion.of(19) }
+}
+
+repositories {
+    mavenLocal()
+    mavenCentral()
+}
+
+dependencyManagement {
+    imports {
+        mavenBom "org.springframework.ai:spring-ai-bom:1.1.4"
+    }
+}
+
+
+
+dependencies {
+    // --- Your app deps (keep versions you need that Boot doesn't manage) ---
+    implementation 'org.apache.lucene:lucene-core:9.12.2'
+    implementation 'org.apache.lucene:lucene-analysis-common:9.12.2'
+    implementation 'org.apache.lucene:lucene-queryparser:9.12.2'
+
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation "org.springframework.ai:spring-ai-starter-mcp-server-webmvc"
+
+    def cdkVersion = '2.12'
+    implementation "org.openscience.cdk:cdk-core:${cdkVersion}"
+    implementation "org.openscience.cdk:cdk-smiles:${cdkVersion}"
+    implementation "org.openscience.cdk:cdk-smarts:${cdkVersion}"
+    implementation "org.openscience.cdk:cdk-silent:${cdkVersion}"
+    implementation "org.openscience.cdk:cdk-hash:${cdkVersion}"
+    implementation "org.openscience.cdk:cdk-inchi:${cdkVersion}"
+    implementation "org.openscience.cdk:cdk-atomtype:${cdkVersion}"
+    implementation "org.openscience.cdk:cdk-descriptor:${cdkVersion}"
+    implementation "org.openscience.cdk:cdk-fingerprint:${cdkVersion}"
+
+    implementation 'com.google.guava:guava:33.3.1-jre'
+    // Let Spring Boot manage Jackson; remove the hard pin to 2.14.2 to avoid downgrading Boot.
+    // implementation 'com.fasterxml.jackson.core:jackson-databind:2.14.2'
+
+    implementation 'org.zeromq:jeromq:0.5.3'
+    implementation 'org.codehaus.groovy:groovy-all:3.0.21'
+
+    // --- Testing ---
+    testImplementation 'org.springframework.boot:spring-boot-starter-test' // Brings JUnit Jupiter (and platform) in aligned versions
+    // Keep only *one* Spock line, aligned with Groovy 3:
+    testImplementation 'org.spockframework:spock-core:2.3-groovy-3.0'
+    testImplementation 'org.spockframework:spock-spring:2.3-groovy-3.0'
+
+    // If you need the launcher at runtime (e.g., some IDEs), keep it without a version; Boot manages it.
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+    // ❌ REMOVE these old/explicit JUnit bits:
+    // testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.1'
+    // testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.1'
+    // testRuntimeOnly 'org.junit.vintage:junit-vintage-engine:5.9.0'  // only add back if you truly run JUnit 4 tests
+}
+
+// Disable the plain jar so only the Spring Boot fat jar is produced.
+// Avoids name conflicts with the *.jar glob in the Dockerfile COPY step.
+jar {
+    enabled = false
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+}
