@@ -1,8 +1,8 @@
-# SparseSim HTTP API: `POST /similarity`
+# SparseSim HTTP API: `QUERY /similarity`
 
 This document describes the REST endpoint implemented by `org.retrosynthesis.restapi.SearchController` when the Spring profile **`web`** is active. The service must be started with a valid Lucene index directory (see the main `README.md`).
 
-- **Method and path:** `POST /similarity`
+- **Method and path:** `QUERY /similarity` - the HTTP QUERY method ([RFC 10008](https://www.rfc-editor.org/rfc/rfc10008)): like POST it carries a request body, but it is safe and idempotent, so it can be retried. Other methods get **`405 Method Not Allowed`** with `Allow: QUERY`.
 - **Content-Type:** `application/json`
 - **Base URL:** wherever the app is bound (default Spring Boot: `http://localhost:8080`)
 
@@ -111,7 +111,7 @@ With `productsim=true`, each result additionally carries `ecfp_prod` and `sim` r
 Pure reaction similarity (backward-compatible):
 
 ```bash
-curl -sS -X POST "http://localhost:8080/similarity" \
+curl -sS -X QUERY "http://localhost:8080/similarity" \
   -H "Content-Type: application/json" \
   -d '{
     "smiles": ["CCO.O=O>>CC(=O)O"],
@@ -127,7 +127,7 @@ curl -sS -X POST "http://localhost:8080/similarity" \
 Combined reaction + product similarity, weighted 60/40 toward reaction similarity:
 
 ```bash
-curl -sS -X POST "http://localhost:8080/similarity" \
+curl -sS -X QUERY "http://localhost:8080/similarity" \
   -H "Content-Type: application/json" \
   -d '{
     "smiles": ["CCO.O=O>>CC(=O)O"],
@@ -142,15 +142,15 @@ curl -sS -X POST "http://localhost:8080/similarity" \
 
 ## MCP parity
 
-The MCP tool **`search_similar_reactions`** (`org.retrosynthesis.mcp.SimilarityTools`) exposes the same parameters for a **single** reaction string and returns JSON encoding of one result list. Semantics match `POST /similarity` with a one-element `smiles` array.
+The MCP tool **`search_similar_reactions`** (`org.retrosynthesis.mcp.SimilarityTools`) exposes the same parameters for a **single** reaction string and returns JSON encoding of one result list. Semantics match `QUERY /similarity` with a one-element `smiles` array.
 
 ---
 
-# SparseSim HTTP API: `POST /molsimilarity`
+# SparseSim HTTP API: `QUERY /molsimilarity`
 
 Molecule-based similarity search over the **product side** of the indexed reactions. Given one or more molecule SMILES, returns reactions whose product is most similar to the query molecule.
 
-- **Method and path:** `POST /molsimilarity`
+- **Method and path:** `QUERY /molsimilarity`
 - **Content-Type:** `application/json`
 - **Base URL:** same as `/similarity`
 
@@ -161,7 +161,7 @@ Molecule-based similarity search over the **product side** of the indexed reacti
 | `smiles` | `string[]` | yes | — | One or more query **molecule SMILES** (not reaction SMILES). Each is searched independently. |
 | `knn` | `integer` | no | `10` | Maximum number of Lucene hits to retrieve per query string (before SMARTS post-filter). |
 | `subgraph` | `string` \| omitted / `null` | no | `null` | If set, non-blank molecule SMILES used as a **substructure filter** on the indexed **product path fingerprint** (required match). |
-| `rxnSmarts` | `string` \| omitted / `null` | no | `null` | Optional SMARTS applied against the full stored reaction after Lucene retrieval. Behaves identically to `rxnSmarts` on `POST /similarity`. |
+| `rxnSmarts` | `string` \| omitted / `null` | no | `null` | Optional SMARTS applied against the full stored reaction after Lucene retrieval. Behaves identically to `rxnSmarts` on `QUERY /similarity`. |
 | `rerank` | `boolean` | no | `true` | When `true`, results are sorted by the recomputed **ECFP4 Tanimoto** (`sim`) descending. |
 
 ### Validation
@@ -199,7 +199,7 @@ Same shape as `/similarity`: `List<List<Result>>` (outer list aligned with the i
 ## Example `curl`
 
 ```bash
-curl -sS -X POST "http://localhost:8080/molsimilarity" \
+curl -sS -X QUERY "http://localhost:8080/molsimilarity" \
   -H "Content-Type: application/json" \
   -d '{
     "smiles": ["CC(=O)O"],
@@ -212,4 +212,4 @@ curl -sS -X POST "http://localhost:8080/molsimilarity" \
 
 ## MCP parity
 
-The MCP tool **`search_reactions_by_molecule`** exposes the same parameters for a **single** molecule SMILES and returns JSON encoding of one result list. Semantics match `POST /molsimilarity` with a one-element `smiles` array.
+The MCP tool **`search_reactions_by_molecule`** exposes the same parameters for a **single** molecule SMILES and returns JSON encoding of one result list. Semantics match `QUERY /molsimilarity` with a one-element `smiles` array.

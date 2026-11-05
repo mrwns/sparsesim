@@ -5,9 +5,11 @@ import org.retrosynthesis.index.Searcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Profile;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -27,7 +29,7 @@ public class SearchController {
     }
 
     /**
-     * JSON body for {@link #search(SearchRequest)}. Semantics match {@code SPARSESIM_ENDPOINT.md} ({@code POST /similarity}).
+     * JSON body for {@link #search(SearchRequest)}. Semantics match {@code SPARSESIM_ENDPOINT.md} ({@code QUERY /similarity}).
      *
      * @param smiles       one or more query reaction SMILES (reactants {@literal >>} products)
      * @param knn          maximum Lucene hits per query string (before SMARTS post-filter)
@@ -72,7 +74,7 @@ public class SearchController {
     }
 
     /**
-     * JSON body for {@link #molSearch(MolSearchRequest)} ({@code POST /molsimilarity}).
+     * JSON body for {@link #molSearch(MolSearchRequest)} ({@code QUERY /molsimilarity}).
      *
      * @param smiles     one or more query molecule SMILES (not reaction SMILES)
      * @param knn        maximum Lucene hits per query string
@@ -108,7 +110,7 @@ public class SearchController {
     /**
      * Reaction similarity search. Delegates to {@link Searcher#searchBySmiles}.
      */
-    @PostMapping("/similarity")
+    @HttpQueryMapping("/similarity")
     public ResponseEntity<List<List<Result>>> search(@RequestBody SearchRequest request) throws Exception {
         
         long t1 = System.currentTimeMillis();
@@ -141,7 +143,7 @@ public class SearchController {
     /**
      * Molecule similarity over indexed reaction products. Delegates to {@link Searcher#searchByMolSmiles}.
      */
-    @PostMapping("/molsimilarity")
+    @HttpQueryMapping("/molsimilarity")
     public ResponseEntity<List<List<Result>>> molSearch(@RequestBody MolSearchRequest request) throws Exception {
 
         long t1 = System.currentTimeMillis();
@@ -166,6 +168,12 @@ public class SearchController {
 
         logger.info("/molsimilarity: {} ms", t2-t1);
         return ResponseEntity.ok(results);
+    }
+
+    /** Any other method on the search paths gets 405 + {@code Allow: QUERY} rather than a 404. */
+    @RequestMapping({"/similarity", "/molsimilarity"})
+    public void wrongMethod(HttpMethod method) throws HttpRequestMethodNotSupportedException {
+        throw new HttpRequestMethodNotSupportedException(method.name(), List.of(QueryMethodConfig.QUERY));
     }
 
     // @PostMapping("/tanimoto")
