@@ -47,8 +47,7 @@ class SearcherMolSmilesTest extends Specification {
         results[0].xid() == 3
         results[0].smiles() == RXN_FLUORO_AMINATION
         results[0].sim() >= 0.99d
-        results[0].similarities().containsKey("ecfp4")
-        !results[0].similarities().containsKey("path_6")
+        results[0].similarities().keySet() == ["ecfp_prod"] as Set
     }
 
     def "subgraph filter restricts candidates to matching products"() {

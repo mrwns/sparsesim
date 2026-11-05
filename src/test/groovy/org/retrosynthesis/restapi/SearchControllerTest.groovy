@@ -98,6 +98,7 @@ class SearchControllerTest extends Specification {
         response.status == 200
         def top = json(response)[0][0]
         top.smiles == RXN_COUPLING
+        top.similarities.keySet() == ["ecfp_prod"] as Set
     }
 
     def "#method #path is rejected with 405 and Allow: QUERY"() {

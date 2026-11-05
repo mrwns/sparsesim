@@ -196,8 +196,8 @@ For **each** entry in `smiles`:
    - **FILTER** (if `subgraph` is set): binary product path fingerprint terms against `prod_pathfp`, all required.
 3. **Runs** Lucene with `knn` as the top‑K cap.
 4. **For each hit**, loads the stored reaction, reconstructs the combined **product** atom container, recomputes its ECFP4 count fingerprint, and computes **Tanimoto** similarity against the query molecule:
-   - **`sim`** = `ecfp4` Tanimoto.
-   - **`similarities`** = `{"ecfp4": ...}`.
+   - **`sim`** = product ECFP4 Tanimoto.
+   - **`similarities`** = `{"ecfp_prod": ...}` (same key as the product score of `/similarity` with `productsim=true`).
 5. **`rxnSmarts` filter**: if supplied, candidates whose full reaction does not match are dropped.
 6. **`rerank`**: if `true`, sorted by `sim` descending.
 
@@ -212,7 +212,7 @@ Same shape as `/similarity`: `List<List<Result>>` (outer list aligned with the i
 | `smiles` | `string` | Matched reaction SMILES from the index. |
 | `sim` | `number` | ECFP4 Tanimoto between query molecule and the matched reaction's product. |
 | `xid` | `integer` | Document / reaction id stored in the index. |
-| `similarities` | `object` | `{"ecfp4": <number>}`. |
+| `similarities` | `object` | `{"ecfp_prod": <number>}`. |
 
 ## Example `curl`
 

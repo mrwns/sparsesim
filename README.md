@@ -138,7 +138,7 @@ Response: a JSON array of arrays (one inner array per input SMILES). Each elemen
 | `smiles`       | `string`            | Matched reaction SMILES                                            |
 | `sim`          | `number`            | Overall similarity score (average of the individual fingerprints)  |
 | `xid`          | `integer`           | Internal index ID of the matched reaction                          |
-| `similarities` | `map<string,number>` | Per-fingerprint Tanimoto scores (e.g. `ecfp4`, `path_6`)         |
+| `similarities` | `map<string,number>` | Per-fingerprint Tanimoto scores: reaction `ecfp4` and `path_6`, plus product `ecfp_prod` with `productsim` |
 
 ## Docker (optional)
 

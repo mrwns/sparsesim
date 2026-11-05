@@ -197,13 +197,13 @@ public class Searcher implements AutoCloseable {
 
             ICountFingerprint resEcfp = ecfpr.getCountFingerprint(products(resrxn));
 
-            double ecfptanimoto = Tanimoto.method1(queryEcfp, resEcfp);
+            double prodtanimoto = Tanimoto.method1(queryEcfp, resEcfp);
 
             out.add(new Result(
                 ressmiles,
-                ecfptanimoto,
+                prodtanimoto,
                 xid,
-                Map.of("ecfp4", ecfptanimoto)
+                Map.of("ecfp_prod", prodtanimoto)
             ));
         }
 
