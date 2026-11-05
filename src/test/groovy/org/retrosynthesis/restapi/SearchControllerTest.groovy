@@ -69,9 +69,9 @@ class SearchControllerTest extends Specification {
         new JsonSlurper().parseText(response.contentAsString)
     }
 
-    def "QUERY /similarity finds the indexed reaction with reaction scores"() {
+    def "QUERY /reactions/similarity/by-reaction finds the indexed reaction with reaction scores"() {
         when:
-        def response = query("/similarity", [smiles: [RXN_COUPLING], knn: 2])
+        def response = query("/reactions/similarity/by-reaction", [smiles: [RXN_COUPLING], knn: 2])
 
         then:
         response.status == 200
@@ -83,16 +83,16 @@ class SearchControllerTest extends Specification {
 
     def "productsim adds the product score as ecfp_prod"() {
         when:
-        def response = query("/similarity", [smiles: [RXN_COUPLING], productsim: true])
+        def response = query("/reactions/similarity/by-reaction", [smiles: [RXN_COUPLING], productsim: true])
 
         then:
         response.status == 200
         json(response)[0][0].similarities.keySet() == ["ecfp4", "path_6", "ecfp_prod"] as Set
     }
 
-    def "QUERY /molsimilarity reports its product score as ecfp_prod"() {
+    def "QUERY /reactions/similarity/by-product reports its product score as ecfp_prod"() {
         when:
-        def response = query("/molsimilarity", [smiles: [PROD_COUPLING]])
+        def response = query("/reactions/similarity/by-product", [smiles: [PROD_COUPLING]])
 
         then:
         response.status == 200
@@ -111,9 +111,9 @@ class SearchControllerTest extends Specification {
         response.getHeader("Allow") == "QUERY"
 
         where:
-        method | path             | builder
-        "POST" | "/similarity"    | { String p -> post(p) }
-        "GET"  | "/molsimilarity" | { String p -> get(p) }
+        method | path                                | builder
+        "POST" | "/reactions/similarity/by-reaction" | { String p -> post(p) }
+        "GET"  | "/reactions/similarity/by-product"  | { String p -> get(p) }
     }
 
     def "invalid #path request is a 400 problem detail: #expected"() {
@@ -126,23 +126,23 @@ class SearchControllerTest extends Specification {
         (json(response).detail as String).startsWith(expected)
 
         where:
-        path             | body                                          | expected
-        "/similarity"    | [smiles: []]                                  | "smiles must contain at least one SMILES"
-        "/molsimilarity" | [:]                                           | "smiles must contain at least one SMILES"
-        "/similarity"    | [smiles: ["not-a-smiles"]]                    | "Invalid reaction SMILES"
-        "/similarity"    | [smiles: ["CCO"]]                             | "Invalid reaction SMILES"
-        "/molsimilarity" | [smiles: [RXN_COUPLING]]                      | "Invalid molecule SMILES"
-        "/similarity"    | [smiles: [RXN_COUPLING], subgraph: "xx("]     | "Invalid subgraph SMILES"
-        "/molsimilarity" | [smiles: ["CCO"], subgraph: "xx("]            | "Invalid subgraph SMILES"
-        "/similarity"    | [smiles: [RXN_COUPLING], rxnSmarts: "[[["]    | "Invalid rxnSmarts"
-        "/similarity"    | [smiles: [RXN_COUPLING], knn: 0]              | "knn must be at least 1"
-        "/molsimilarity" | [smiles: ["CCO"], knn: -1]                    | "knn must be at least 1"
-        "/similarity"    | [smiles: ["CCO>>"], productsim: true]         | "productsim requires a reaction with products"
+        path                                | body                                          | expected
+        "/reactions/similarity/by-reaction" | [smiles: []]                                  | "smiles must contain at least one SMILES"
+        "/reactions/similarity/by-product"  | [:]                                           | "smiles must contain at least one SMILES"
+        "/reactions/similarity/by-reaction" | [smiles: ["not-a-smiles"]]                    | "Invalid reaction SMILES"
+        "/reactions/similarity/by-reaction" | [smiles: ["CCO"]]                             | "Invalid reaction SMILES"
+        "/reactions/similarity/by-product"  | [smiles: [RXN_COUPLING]]                      | "Invalid molecule SMILES"
+        "/reactions/similarity/by-reaction" | [smiles: [RXN_COUPLING], subgraph: "xx("]     | "Invalid subgraph SMILES"
+        "/reactions/similarity/by-product"  | [smiles: ["CCO"], subgraph: "xx("]            | "Invalid subgraph SMILES"
+        "/reactions/similarity/by-reaction" | [smiles: [RXN_COUPLING], rxnSmarts: "[[["]    | "Invalid rxnSmarts"
+        "/reactions/similarity/by-reaction" | [smiles: [RXN_COUPLING], knn: 0]              | "knn must be at least 1"
+        "/reactions/similarity/by-product"  | [smiles: ["CCO"], knn: -1]                    | "knn must be at least 1"
+        "/reactions/similarity/by-reaction" | [smiles: ["CCO>>"], productsim: true]         | "productsim requires a reaction with products"
     }
 
     def "malformed JSON is a 400 problem detail"() {
         when:
-        def response = query("/similarity", "{")
+        def response = query("/reactions/similarity/by-reaction", "{")
 
         then:
         response.status == 400

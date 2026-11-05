@@ -30,7 +30,7 @@ public class SearchController {
     }
 
     /**
-     * JSON body for {@link #search(SearchRequest)}. Semantics match {@code SPARSESIM_ENDPOINT.md} ({@code QUERY /similarity}).
+     * JSON body for {@link #search(SearchRequest)}. Semantics match {@code SPARSESIM_ENDPOINT.md} ({@code QUERY /reactions/similarity/by-reaction}).
      *
      * @param smiles       one or more query reaction SMILES (reactants {@literal >>} products)
      * @param knn          maximum Lucene hits per query string (before SMARTS post-filter)
@@ -75,7 +75,7 @@ public class SearchController {
     }
 
     /**
-     * JSON body for {@link #molSearch(MolSearchRequest)} ({@code QUERY /molsimilarity}).
+     * JSON body for {@link #molSearch(MolSearchRequest)} ({@code QUERY /reactions/similarity/by-product}).
      *
      * @param smiles     one or more query molecule SMILES (not reaction SMILES)
      * @param knn        maximum Lucene hits per query string
@@ -111,7 +111,7 @@ public class SearchController {
     /**
      * Reaction similarity search. Delegates to {@link Searcher#searchBySmiles}.
      */
-    @HttpQueryMapping("/similarity")
+    @HttpQueryMapping("/reactions/similarity/by-reaction")
     public ResponseEntity<List<List<Result>>> search(@RequestBody SearchRequest request) throws Exception {
         
         long t1 = System.currentTimeMillis();
@@ -135,14 +135,14 @@ public class SearchController {
         }
         long t2 = System.currentTimeMillis();
 
-        logger.info("/similarity: {} ms", t2-t1);
+        logger.info("/reactions/similarity/by-reaction: {} ms", t2-t1);
         return ResponseEntity.ok(results);
     }
 
     /**
      * Molecule similarity over indexed reaction products. Delegates to {@link Searcher#searchByMolSmiles}.
      */
-    @HttpQueryMapping("/molsimilarity")
+    @HttpQueryMapping("/reactions/similarity/by-product")
     public ResponseEntity<List<List<Result>>> molSearch(@RequestBody MolSearchRequest request) throws Exception {
 
         long t1 = System.currentTimeMillis();
@@ -163,12 +163,12 @@ public class SearchController {
         }
         long t2 = System.currentTimeMillis();
 
-        logger.info("/molsimilarity: {} ms", t2-t1);
+        logger.info("/reactions/similarity/by-product: {} ms", t2-t1);
         return ResponseEntity.ok(results);
     }
 
     /** Any other method on the search paths gets 405 + {@code Allow: QUERY} rather than a 404. */
-    @RequestMapping({"/similarity", "/molsimilarity"})
+    @RequestMapping({"/reactions/similarity/by-reaction", "/reactions/similarity/by-product"})
     public void wrongMethod(HttpMethod method) throws HttpRequestMethodNotSupportedException {
         throw new HttpRequestMethodNotSupportedException(method.name(), List.of(QueryMethodConfig.QUERY));
     }

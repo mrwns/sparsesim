@@ -1,8 +1,8 @@
-# SparseSim HTTP API: `QUERY /similarity`
+# SparseSim HTTP API: `QUERY /reactions/similarity/by-reaction`
 
 This document describes the REST endpoint implemented by `org.retrosynthesis.restapi.SearchController` when the Spring profile **`web`** is active. The service must be started with a valid Lucene index directory (see the main `README.md`).
 
-- **Method and path:** `QUERY /similarity` - the HTTP QUERY method ([RFC 10008](https://www.rfc-editor.org/rfc/rfc10008)): like POST it carries a request body, but it is safe and idempotent, so it can be retried. Other methods get **`405 Method Not Allowed`** with `Allow: QUERY`.
+- **Method and path:** `QUERY /reactions/similarity/by-reaction` - the HTTP QUERY method ([RFC 10008](https://www.rfc-editor.org/rfc/rfc10008)): like POST it carries a request body, but it is safe and idempotent, so it can be retried. Other methods get **`405 Method Not Allowed`** with `Allow: QUERY`.
 - **Content-Type:** `application/json`
 - **Base URL:** wherever the app is bound (default Spring Boot: `http://localhost:8080`)
 
@@ -42,7 +42,7 @@ One invalid entry in `smiles` fails the whole request.
   "title": "Bad Request",
   "status": 400,
   "detail": "Invalid reaction SMILES: Not a reaction SMILES: CCO",
-  "instance": "/similarity"
+  "instance": "/reactions/similarity/by-reaction"
 }
 ```
 
@@ -129,7 +129,7 @@ With `productsim=true`, each result additionally carries `ecfp_prod` and `sim` r
 Pure reaction similarity (backward-compatible):
 
 ```bash
-curl -sS -X QUERY "http://localhost:8080/similarity" \
+curl -sS -X QUERY "http://localhost:8080/reactions/similarity/by-reaction" \
   -H "Content-Type: application/json" \
   -d '{
     "smiles": ["CCO.O=O>>CC(=O)O"],
@@ -145,7 +145,7 @@ curl -sS -X QUERY "http://localhost:8080/similarity" \
 Combined reaction + product similarity, weighted 60/40 toward reaction similarity:
 
 ```bash
-curl -sS -X QUERY "http://localhost:8080/similarity" \
+curl -sS -X QUERY "http://localhost:8080/reactions/similarity/by-reaction" \
   -H "Content-Type: application/json" \
   -d '{
     "smiles": ["CCO.O=O>>CC(=O)O"],
@@ -160,17 +160,17 @@ curl -sS -X QUERY "http://localhost:8080/similarity" \
 
 ## MCP parity
 
-The MCP tool **`search_similar_reactions`** (`org.retrosynthesis.mcp.SimilarityTools`) exposes the same parameters for a **single** reaction string and returns JSON encoding of one result list. Semantics match `QUERY /similarity` with a one-element `smiles` array.
+The MCP tool **`search_similar_reactions`** (`org.retrosynthesis.mcp.SimilarityTools`) exposes the same parameters for a **single** reaction string and returns JSON encoding of one result list. Semantics match `QUERY /reactions/similarity/by-reaction` with a one-element `smiles` array.
 
 ---
 
-# SparseSim HTTP API: `QUERY /molsimilarity`
+# SparseSim HTTP API: `QUERY /reactions/similarity/by-product`
 
 Molecule-based similarity search over the **product side** of the indexed reactions. Given one or more molecule SMILES, returns reactions whose product is most similar to the query molecule.
 
-- **Method and path:** `QUERY /molsimilarity`
+- **Method and path:** `QUERY /reactions/similarity/by-product`
 - **Content-Type:** `application/json`
-- **Base URL:** same as `/similarity`
+- **Base URL:** same as `/reactions/similarity/by-reaction`
 
 ## Request body
 
@@ -179,12 +179,12 @@ Molecule-based similarity search over the **product side** of the indexed reacti
 | `smiles` | `string[]` | yes | — | One or more query **molecule SMILES** (not reaction SMILES). Each is searched independently. |
 | `knn` | `integer` | no | `10` | Maximum number of Lucene hits to retrieve per query string (before SMARTS post-filter). |
 | `subgraph` | `string` \| omitted / `null` | no | `null` | If set, non-blank molecule SMILES used as a **substructure filter** on the indexed **product path fingerprint** (required match). |
-| `rxnSmarts` | `string` \| omitted / `null` | no | `null` | Optional SMARTS applied against the full stored reaction after Lucene retrieval. Behaves identically to `rxnSmarts` on `QUERY /similarity`. |
+| `rxnSmarts` | `string` \| omitted / `null` | no | `null` | Optional SMARTS applied against the full stored reaction after Lucene retrieval. Behaves identically to `rxnSmarts` on `QUERY /reactions/similarity/by-reaction`. |
 | `rerank` | `boolean` | no | `true` | When `true`, results are sorted by the recomputed **ECFP4 Tanimoto** (`sim`) descending. |
 
 ### Errors
 
-Same as `/similarity`: invalid requests get a `400` problem details body.
+Same as `/reactions/similarity/by-reaction`: invalid requests get a `400` problem details body.
 
 ## Behaviour (pipeline)
 
@@ -197,15 +197,15 @@ For **each** entry in `smiles`:
 3. **Runs** Lucene with `knn` as the top‑K cap.
 4. **For each hit**, loads the stored reaction, reconstructs the combined **product** atom container, recomputes its ECFP4 count fingerprint, and computes **Tanimoto** similarity against the query molecule:
    - **`sim`** = product ECFP4 Tanimoto.
-   - **`similarities`** = `{"ecfp_prod": ...}` (same key as the product score of `/similarity` with `productsim=true`).
+   - **`similarities`** = `{"ecfp_prod": ...}` (same key as the product score of `/reactions/similarity/by-reaction` with `productsim=true`).
 5. **`rxnSmarts` filter**: if supplied, candidates whose full reaction does not match are dropped.
 6. **`rerank`**: if `true`, sorted by `sim` descending.
 
-Unlike `/similarity`, path fingerprints are used **only for substructure filtering** and do not contribute to the `sim` score.
+Unlike `/reactions/similarity/by-reaction`, path fingerprints are used **only for substructure filtering** and do not contribute to the `sim` score.
 
 ## Response body
 
-Same shape as `/similarity`: `List<List<Result>>` (outer list aligned with the input `smiles` array). Each `Result` has:
+Same shape as `/reactions/similarity/by-reaction`: `List<List<Result>>` (outer list aligned with the input `smiles` array). Each `Result` has:
 
 | Field | Type | Description |
 |--------|------|-------------|
@@ -217,7 +217,7 @@ Same shape as `/similarity`: `List<List<Result>>` (outer list aligned with the i
 ## Example `curl`
 
 ```bash
-curl -sS -X QUERY "http://localhost:8080/molsimilarity" \
+curl -sS -X QUERY "http://localhost:8080/reactions/similarity/by-product" \
   -H "Content-Type: application/json" \
   -d '{
     "smiles": ["CC(=O)O"],
@@ -230,7 +230,7 @@ curl -sS -X QUERY "http://localhost:8080/molsimilarity" \
 
 ## MCP parity
 
-The MCP tool **`search_reactions_by_molecule`** exposes the same parameters for a **single** molecule SMILES and returns JSON encoding of one result list. Semantics match `QUERY /molsimilarity` with a one-element `smiles` array.
+The MCP tool **`search_reactions_by_molecule`** exposes the same parameters for a **single** molecule SMILES and returns JSON encoding of one result list. Semantics match `QUERY /reactions/similarity/by-product` with a one-element `smiles` array.
 
 ---
 

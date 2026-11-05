@@ -89,14 +89,14 @@ With MCP enabled, clients typically connect to the SSE endpoint at `http://local
 
 ## Query the index
 
-Both search endpoints use the HTTP **QUERY** method ([RFC 10008](https://www.rfc-editor.org/rfc/rfc10008)): a safe, idempotent request with a JSON body. Other methods get `405` with `Allow: QUERY`. Invalid requests (bad SMILES/SMARTS, `knn` < 1, ...) get `400` with an RFC 9457 problem details body. Full reference: `SPARSESIM_ENDPOINT.md`; `QUERY /molsimilarity` searches by molecule SMILES against indexed products.
+Both search endpoints use the HTTP **QUERY** method ([RFC 10008](https://www.rfc-editor.org/rfc/rfc10008)): a safe, idempotent request with a JSON body. Other methods get `405` with `Allow: QUERY`. Invalid requests (bad SMILES/SMARTS, `knn` < 1, ...) get `400` with an RFC 9457 problem details body. Full reference: `SPARSESIM_ENDPOINT.md`; `QUERY /reactions/similarity/by-product` takes molecule SMILES and returns the indexed reactions whose product is most similar.
 
-### QUERY `/similarity`
+### QUERY `/reactions/similarity/by-reaction`
 
 Send a JSON body with one or more reaction SMILES strings.
 
 ```bash
-curl -sS -X QUERY "http://localhost:8080/similarity" \
+curl -sS -X QUERY "http://localhost:8080/reactions/similarity/by-reaction" \
   -H "Content-Type: application/json" \
   -d '{
     "smiles": ["CCO.O=O>>CC(=O)O"],
