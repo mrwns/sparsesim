@@ -55,8 +55,8 @@ dependencies {
     // --- Testing ---
     testImplementation 'org.springframework.boot:spring-boot-starter-test' // Brings JUnit Jupiter (and platform) in aligned versions
     // Keep only *one* Spock line, aligned with Groovy 3:
-    testImplementation 'org.spockframework:spock-core:2.3-groovy-3.0'
-    testImplementation 'org.spockframework:spock-spring:2.3-groovy-3.0'
+    testImplementation 'org.spockframework:spock-core:2.4-groovy-3.0'
+    testImplementation 'org.spockframework:spock-spring:2.4-groovy-3.0'
 
     // If you need the launcher at runtime (e.g., some IDEs), keep it without a version; Boot manages it.
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
