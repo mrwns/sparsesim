@@ -1,5 +1,6 @@
 package org.retrosynthesis.restapi;
 
+import org.retrosynthesis.index.InvalidQueryException;
 import org.retrosynthesis.index.Result;
 import org.retrosynthesis.index.Searcher;
 import org.slf4j.Logger;
@@ -117,9 +118,7 @@ public class SearchController {
 
         logger.info("Search request: {}", request);
         
-        if (request.smiles == null || request.smiles.isEmpty()) {
-            return ResponseEntity.badRequest().build();
-        }
+        requireSmiles(request.smiles);
         List<List<Result>> results = new ArrayList<>();
         for (String smiles : request.smiles) {
 
@@ -150,9 +149,7 @@ public class SearchController {
 
         logger.info("Mol search request: {}", request);
 
-        if (request.smiles == null || request.smiles.isEmpty()) {
-            return ResponseEntity.badRequest().build();
-        }
+        requireSmiles(request.smiles);
         List<List<Result>> results = new ArrayList<>();
         for (String smiles : request.smiles) {
 
@@ -174,6 +171,12 @@ public class SearchController {
     @RequestMapping({"/similarity", "/molsimilarity"})
     public void wrongMethod(HttpMethod method) throws HttpRequestMethodNotSupportedException {
         throw new HttpRequestMethodNotSupportedException(method.name(), List.of(QueryMethodConfig.QUERY));
+    }
+
+    private static void requireSmiles(List<String> smiles) {
+        if (smiles == null || smiles.isEmpty()) {
+            throw new InvalidQueryException("smiles must contain at least one SMILES");
+        }
     }
 
     // @PostMapping("/tanimoto")

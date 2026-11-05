@@ -24,9 +24,27 @@ JSON object with the following properties:
 
 Omitted optional fields use the defaults above (via `SearchRequest` deserialization).
 
-### Validation
+### Errors
 
-- If `smiles` is missing, `null`, or empty, the server responds with **`400 Bad Request`** (no body).
+Invalid requests get **`400 Bad Request`** with an [RFC 9457](https://www.rfc-editor.org/rfc/rfc9457) problem details body (`application/problem+json`) whose `detail` says what is wrong:
+
+- `smiles` missing, `null` or empty
+- an entry of `smiles`, or `subgraph`, that is not valid (reaction) SMILES
+- `rxnSmarts` that is not valid SMARTS
+- `knn` below 1
+- `productsim=true` for a reaction without products
+
+One invalid entry in `smiles` fails the whole request.
+
+```json
+{
+  "type": "about:blank",
+  "title": "Bad Request",
+  "status": 400,
+  "detail": "Invalid reaction SMILES: Not a reaction SMILES: CCO",
+  "instance": "/similarity"
+}
+```
 
 ---
 
@@ -164,9 +182,9 @@ Molecule-based similarity search over the **product side** of the indexed reacti
 | `rxnSmarts` | `string` \| omitted / `null` | no | `null` | Optional SMARTS applied against the full stored reaction after Lucene retrieval. Behaves identically to `rxnSmarts` on `QUERY /similarity`. |
 | `rerank` | `boolean` | no | `true` | When `true`, results are sorted by the recomputed **ECFP4 Tanimoto** (`sim`) descending. |
 
-### Validation
+### Errors
 
-- If `smiles` is missing, `null`, or empty, the server responds with **`400 Bad Request`** (no body).
+Same as `/similarity`: invalid requests get a `400` problem details body.
 
 ## Behaviour (pipeline)
 

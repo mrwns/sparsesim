@@ -114,4 +114,37 @@ class SearchControllerTest extends Specification {
         "POST" | "/similarity"    | { String p -> post(p) }
         "GET"  | "/molsimilarity" | { String p -> get(p) }
     }
+
+    def "invalid #path request is a 400 problem detail: #expected"() {
+        when:
+        def response = query(path, body)
+
+        then:
+        response.status == 400
+        response.contentType == MediaType.APPLICATION_PROBLEM_JSON_VALUE
+        (json(response).detail as String).startsWith(expected)
+
+        where:
+        path             | body                                          | expected
+        "/similarity"    | [smiles: []]                                  | "smiles must contain at least one SMILES"
+        "/molsimilarity" | [:]                                           | "smiles must contain at least one SMILES"
+        "/similarity"    | [smiles: ["not-a-smiles"]]                    | "Invalid reaction SMILES"
+        "/similarity"    | [smiles: ["CCO"]]                             | "Invalid reaction SMILES"
+        "/molsimilarity" | [smiles: [RXN_COUPLING]]                      | "Invalid molecule SMILES"
+        "/similarity"    | [smiles: [RXN_COUPLING], subgraph: "xx("]     | "Invalid subgraph SMILES"
+        "/molsimilarity" | [smiles: ["CCO"], subgraph: "xx("]            | "Invalid subgraph SMILES"
+        "/similarity"    | [smiles: [RXN_COUPLING], rxnSmarts: "[[["]    | "Invalid rxnSmarts"
+        "/similarity"    | [smiles: [RXN_COUPLING], knn: 0]              | "knn must be at least 1"
+        "/molsimilarity" | [smiles: ["CCO"], knn: -1]                    | "knn must be at least 1"
+        "/similarity"    | [smiles: ["CCO>>"], productsim: true]         | "productsim requires a reaction with products"
+    }
+
+    def "malformed JSON is a 400 problem detail"() {
+        when:
+        def response = query("/similarity", "{")
+
+        then:
+        response.status == 400
+        response.contentType == MediaType.APPLICATION_PROBLEM_JSON_VALUE
+    }
 }

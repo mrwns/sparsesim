@@ -18,6 +18,7 @@ import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.similarities.BM25Similarity;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.MMapDirectory;
+import org.openscience.cdk.exception.InvalidSmilesException;
 import org.openscience.cdk.fingerprint.CircularFingerprinter;
 import org.openscience.cdk.fingerprint.Fingerprinter;
 import org.openscience.cdk.fingerprint.ICountFingerprint;
@@ -149,9 +150,11 @@ public class Searcher implements AutoCloseable {
      */
     public List<Result> searchByMolSmiles(String queryMolSmiles, String subgraphSmiles, String rxnSmarts, int topK, boolean rerank) throws Exception {
 
-        IAtomContainer queryMol = SmilesXMol.mol(queryMolSmiles);
+        requireValidTopK(topK);
 
-        SmartsFilter rxnSmartsFilter = new SmartsFilter(rxnSmarts);
+        IAtomContainer queryMol = parseQueryMol(queryMolSmiles, "molecule");
+
+        SmartsFilter rxnSmartsFilter = parseSmartsFilter(rxnSmarts);
 
         IFingerprinter ecfpr = new CircularFingerprinter(CircularFingerprinter.CLASS_ECFP4);
         ICountFingerprint queryEcfp = ecfpr.getCountFingerprint(queryMol);
@@ -164,7 +167,7 @@ public class Searcher implements AutoCloseable {
 
         if (subgraphSmiles != null && !subgraphSmiles.isBlank()) {
 
-            IAtomContainer subMol = SmilesXMol.mol(subgraphSmiles);
+            IAtomContainer subMol = parseQueryMol(subgraphSmiles, "subgraph");
             Fingerprinter pathfp = new Fingerprinter(768763);
             BitSet bitSet = pathfp.getFingerprint(subMol);
 
@@ -192,11 +195,7 @@ public class Searcher implements AutoCloseable {
                 continue;
             }
 
-            IAtomContainer resProduct = resrxn.getBuilder().newInstance(IAtomContainer.class);
-            for (IAtomContainer comp : resrxn.getProducts().atomContainers()) {
-                resProduct.add(comp);
-            }
-            ICountFingerprint resEcfp = ecfpr.getCountFingerprint(resProduct);
+            ICountFingerprint resEcfp = ecfpr.getCountFingerprint(products(resrxn));
 
             double ecfptanimoto = Tanimoto.method1(queryEcfp, resEcfp);
 
@@ -217,11 +216,13 @@ public class Searcher implements AutoCloseable {
     
     public List<Result> searchBySmiles(String queryRxnSmiles, String subgraphSmiles, String rxnSmarts, int topK, boolean reactionSim, boolean productsim, float productBoost, boolean rerank) throws Exception {
 
+        requireValidTopK(topK);
+
         float pb = Math.max(0.0f, Math.min(1.0f, productBoost));
 
-        IReaction rxn = SmilesXMol.reaction(queryRxnSmiles);
+        IReaction rxn = parseQueryReaction(queryRxnSmiles);
 
-        SmartsFilter rxnSmartsFilter = new SmartsFilter(rxnSmarts);
+        SmartsFilter rxnSmartsFilter = parseSmartsFilter(rxnSmarts);
 
         ReactionFingerprinter<Integer> ecfpRxnFpr = new ReactionFingerprinter<Integer>();
         Map<Integer, Integer> ecRfp = ecfpRxnFpr.getRawFingerprint(rxn);
@@ -243,7 +244,7 @@ public class Searcher implements AutoCloseable {
 
         if (subgraphSmiles != null) {
 
-            IAtomContainer productMol = SmilesXMol.mol(subgraphSmiles);
+            IAtomContainer productMol = parseQueryMol(subgraphSmiles, "subgraph");
 
             Fingerprinter pathfp = new Fingerprinter(768763);
 
@@ -259,11 +260,12 @@ public class Searcher implements AutoCloseable {
 
         if (productsim) {
 
-            String productSmiles = queryRxnSmiles.split(">")[2];
-            IAtomContainer queryProductMol = SmilesXMol.mol(productSmiles);
+            if (rxn.getProductCount() == 0) {
+                throw new InvalidQueryException("productsim requires a reaction with products: " + queryRxnSmiles);
+            }
 
             ecfpr = new CircularFingerprinter(CircularFingerprinter.CLASS_ECFP4);
-            queryProductEcfp = ecfpr.getCountFingerprint(queryProductMol);
+            queryProductEcfp = ecfpr.getCountFingerprint(products(rxn));
             Map<Integer, Integer> ecfpCounts = FingerprintConverter.convert(queryProductEcfp);
 
             Query p = buildCountFpOrQuery(ecfpCounts, FIELD_PRODFPT_ECFP, 1.0f);
@@ -303,11 +305,7 @@ public class Searcher implements AutoCloseable {
             double total;
             Map<String, Double> similarities;
             if (productsim) {
-                IAtomContainer resProduct = resrxn.getBuilder().newInstance(IAtomContainer.class);
-                for (IAtomContainer comp : resrxn.getProducts().atomContainers()) {
-                    resProduct.add(comp);
-                }
-                ICountFingerprint resProductEcfp = ecfpr.getCountFingerprint(resProduct);
+                ICountFingerprint resProductEcfp = ecfpr.getCountFingerprint(products(resrxn));
                 double prodtanimoto = Tanimoto.method1(queryProductEcfp, resProductEcfp);
 
                 total = (1.0 - pb) * reactionScore + pb * prodtanimoto;
@@ -338,6 +336,45 @@ public class Searcher implements AutoCloseable {
 
         return out;
 
+    }
+
+    /** All products of a reaction combined into one container. */
+    private static IAtomContainer products(IReaction rxn) {
+        IAtomContainer combined = rxn.getBuilder().newInstance(IAtomContainer.class);
+        for (IAtomContainer comp : rxn.getProducts().atomContainers()) {
+            combined.add(comp);
+        }
+        return combined;
+    }
+
+    private static void requireValidTopK(int topK) {
+        if (topK < 1) {
+            throw new InvalidQueryException("knn must be at least 1, got " + topK);
+        }
+    }
+
+    private static IReaction parseQueryReaction(String smiles) {
+        try {
+            return SmilesXMol.reaction(smiles);
+        } catch (InvalidSmilesException e) {
+            throw new InvalidQueryException("Invalid reaction SMILES: " + e.getMessage());
+        }
+    }
+
+    private static IAtomContainer parseQueryMol(String smiles, String role) {
+        try {
+            return SmilesXMol.mol(smiles);
+        } catch (InvalidSmilesException e) {
+            throw new InvalidQueryException("Invalid " + role + " SMILES: " + e.getMessage());
+        }
+    }
+
+    private static SmartsFilter parseSmartsFilter(String smarts) {
+        try {
+            return new SmartsFilter(smarts);
+        } catch (IllegalArgumentException e) {
+            throw new InvalidQueryException("Invalid rxnSmarts: " + e.getMessage());
+        }
     }
 
     @Override public void close() throws Exception { reader.close(); }
