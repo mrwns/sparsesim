@@ -148,4 +148,10 @@ class SearchControllerTest extends Specification {
         response.status == 400
         response.contentType == MediaType.APPLICATION_PROBLEM_JSON_VALUE
     }
+
+    def "health is UP and info reports the index size"() {
+        expect:
+        json(mvc.perform(get("/actuator/health")).andReturn().response).status == "UP"
+        json(mvc.perform(get("/actuator/info")).andReturn().response).index.reactions == 2
+    }
 }

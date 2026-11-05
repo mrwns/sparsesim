@@ -62,7 +62,7 @@ java -jar build/libs/*.jar \
   --indexdir=./index
 ```
 
-By default Spring Boot serves on `http://localhost:8080`.
+By default Spring Boot serves on `http://localhost:8080`. `GET /actuator/health` reports `UP` once the index is loaded and `GET /actuator/info` reports the number of indexed reactions.
 
 ### MCP server (optional)
 

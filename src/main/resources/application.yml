@@ -17,6 +17,12 @@ spring:
         annotation-scanner:
           enabled: true
 
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
 # Default index directory (can be overridden via environment variable)
 indexdir: ${INDEX_DIR:/app/index}
 

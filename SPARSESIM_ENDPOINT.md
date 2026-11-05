@@ -231,3 +231,12 @@ curl -sS -X QUERY "http://localhost:8080/molsimilarity" \
 ## MCP parity
 
 The MCP tool **`search_reactions_by_molecule`** exposes the same parameters for a **single** molecule SMILES and returns JSON encoding of one result list. Semantics match `QUERY /molsimilarity` with a one-element `smiles` array.
+
+---
+
+# Health and info
+
+Provided by Spring Boot Actuator:
+
+- `GET /actuator/health` - `{"status":"UP"}` once the index is loaded (the app does not start without one). Use it as the liveness/readiness probe.
+- `GET /actuator/info` - details of the served index, e.g. `{"index":{"reactions":40008}}`.

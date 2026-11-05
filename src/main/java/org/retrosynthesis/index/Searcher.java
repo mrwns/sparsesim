@@ -75,6 +75,10 @@ public class Searcher implements AutoCloseable {
         }
     }
 
+    public int numReactions() {
+        return reader.numDocs();
+    }
+
     public long indexSize(String field){
         long indexSize = 0;
         try {
