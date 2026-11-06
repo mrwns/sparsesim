@@ -48,17 +48,17 @@ class ComplexIndexerTest extends Specification {
         ComplexIndexer indexer = new ComplexIndexer(tempDir);
 
         // add reactions to index
-        indexer.addReaction(rxn1, 1);
-        indexer.addReaction(rxn2, 2);
-        indexer.addReaction(rxn3, 3);
-        indexer.addReaction(rxn4, 4);
-        indexer.addReaction(rxn5, 5);
-        indexer.addReaction(rxn6, 6);
-        indexer.addReaction(rxn7, 7);
-        indexer.addReaction(rxn8, 8);
-        indexer.addReaction(rxn5a, 9);
-        indexer.addReaction(rxn9, 10);
-        indexer.addReaction(rxn1a, 11);
+        indexer.addReaction(rxn1, "1");
+        indexer.addReaction(rxn2, "2");
+        indexer.addReaction(rxn3, "3");
+        indexer.addReaction(rxn4, "4");
+        indexer.addReaction(rxn5, "5");
+        indexer.addReaction(rxn6, "6");
+        indexer.addReaction(rxn7, "7");
+        indexer.addReaction(rxn8, "8");
+        indexer.addReaction(rxn5a, "9");
+        indexer.addReaction(rxn9, "10");
+        indexer.addReaction(rxn1a, "11");
 
         indexer.close();
 
@@ -116,8 +116,8 @@ class ComplexIndexerTest extends Specification {
               println(rxn)
 
             // String product = rxn.split(">")[2];
-             // (String queryRxnSmiles, String subgraphSmiles, int topK, boolean reactionSim, boolean productsim, float productBoost, boolean rerank)
-              List<Result> results = searcher.searchBySmiles(rxn, null, null, 5, true, true, 1.0f, false);
+             // (String queryRxnSmiles, String subgraphSmiles, String rxnSmarts, int topK, boolean reactionSim, Double productWeight, boolean rerank)
+              List<Result> results = searcher.searchBySmiles(rxn, null, null, 5, true, 1.0d, false);
 
                 ICountFingerprint ref = fp.getCountFingerprint(SmilesXMol.reaction(rxn));
 //                def fp2 = fp.getCountFingerprint(SmilesXMol.reaction(rxnf));

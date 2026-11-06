@@ -5,6 +5,7 @@ import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.index.*;
 import org.apache.lucene.store.*;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.codecs.lucene912.Lucene912Codec;
 import org.openscience.cdk.fingerprint.CircularFingerprinter;
 import org.openscience.cdk.fingerprint.Fingerprinter;
 import org.openscience.cdk.fingerprint.ICountFingerprint;
@@ -19,19 +20,23 @@ import org.retrosynthesis.chem.SmilesXMol;
 
 import static org.retrosynthesis.index.FieldNames.*;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.BitSet;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Stream;
+import java.util.stream.IntStream;
 
 
 public class ComplexIndexer implements AutoCloseable {
     
     private final Directory dir;
     private final IndexWriter writer;
+    private final AtomicInteger indexed = new AtomicInteger(0);
     private static final FieldType COUNT_FT;
     private static final FieldType BINARY_FT;
 
@@ -51,18 +56,23 @@ public class ComplexIndexer implements AutoCloseable {
 
     public ComplexIndexer(Path indexDir) throws Exception {
         this.dir = FSDirectory.open(indexDir);
+        // BEST_COMPRESSION halves the stored reactions (~15% of the whole index) at no measurable query cost.
         this.writer = new IndexWriter(dir,
-                new IndexWriterConfig(/* analyzer not used since we give TokenStream */));
+                new IndexWriterConfig(/* analyzer not used since we give TokenStream */)
+                        .setCodec(new Lucene912Codec(Lucene912Codec.Mode.BEST_COMPRESSION)));
     }
 
     public void addReaction(InputReaction reaction) throws Exception {
-        addReaction(reaction.smiles(), reaction.xrnid());
+        addReaction(reaction.smiles(), reaction.id());
     }
 
 
-    public void addReaction(String smiles, long xrnid) throws Exception {
-        try {
-        
+    public void addReaction(String smiles, String id) throws Exception {
+        writer.addDocument(document(smiles, id));
+    }
+
+    /** Parses and fingerprints a reaction; throws if it cannot be parsed or fingerprinted. */
+    private static Document document(String smiles, String id) throws Exception {
         IReaction rxn = SmilesXMol.reaction(smiles);
 
         final IChemObjectBuilder bldr = rxn.getBuilder();
@@ -79,7 +89,7 @@ public class ComplexIndexer implements AutoCloseable {
         var doc = new Document();
         
         doc.add(new StoredField(FieldNames.FIELD_RXN_SMILES, smiles));
-        doc.add(new IntField(FieldNames.FIELD_RXN_ID, (int) xrnid, Store.YES));
+        doc.add(new StringField(FieldNames.FIELD_RXN_ID, id, Store.YES));
 
         // doc.add(new StoredField(FIELD_FP_COUNTS, FingerprintUtil.countsToCsv(counts)));
         
@@ -110,49 +120,54 @@ public class ComplexIndexer implements AutoCloseable {
 
         doc.add(new Field(FIELD_PRODFPT_ECFP, ts3, COUNT_FT));
 
-        writer.addDocument(doc);
-         
-      } catch (Exception e) {
-             System.err.println(smiles + " error " + xrnid);
-             e.printStackTrace();
-            //  throw new RuntimeException(e);
-        }
-        
+        return doc;
     }
 
-    public void addAll(List<String> smilesList) throws Exception {
-        AtomicInteger i = new AtomicInteger(0);
-        smilesList.parallelStream().forEach(s -> {
+    /**
+     * Indexes a batch of reactions in parallel; each keeps the ID it comes with. A reaction that cannot be parsed or
+     * fingerprinted is skipped and returned as a failure, in batch order. Index write errors abort. Call
+     * {@link #commit()} after the last batch.
+     */
+    public List<IndexingFailure> add(List<InputReaction> reactions) {
+        Map<Integer, IndexingFailure> failures = new ConcurrentSkipListMap<>();
+        IntStream.range(0, reactions.size()).parallel().forEach(i -> {
+            InputReaction r = reactions.get(i);
+            Document doc;
             try {
-                int id = i.getAndIncrement();
-                addReaction(s, id);
-                if (id > 0 && id % 5000 == 0) {
-                    System.out.print(".");
-                }
-                if (id > 0 && (id % 250000 == 0)) {
-                    System.out.print(String.format("%12s", id));
-                    System.out.println();
-                }
-
+                doc = document(r.smiles(), r.id());
             } catch (Exception e) {
-                throw new RuntimeException(e);
+                failures.put(i, IndexingFailure.of(r, e));
+                return;
+            }
+            try {
+                writer.addDocument(doc);
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+            int n = indexed.incrementAndGet();
+            if (n % 5000 == 0) {
+                System.out.print(".");
+            }
+            if (n % 250000 == 0) {
+                System.out.print(String.format("%12s", n));
+                System.out.println();
             }
         });
+        return List.copyOf(failures.values());
+    }
+
+    /** Merges the index into a single segment, for faster reads, and commits it. */
+    public void commit() throws IOException {
         System.out.println();
-        writer.forceMerge(1);  // collapse to single segment for faster reads
+        writer.forceMerge(1);
         writer.commit();
     }
 
-    public void addAll(Stream<InputReaction> reactions) throws Exception {
-        reactions.forEach(r -> {
-            try {
-                addReaction(r);
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        });
-        writer.forceMerge(1);  // collapse to single segment for faster reads
-        writer.commit();
+    /** {@link #add} then {@link #commit}. */
+    public List<IndexingFailure> addAll(List<InputReaction> reactions) throws IOException {
+        List<IndexingFailure> failures = add(reactions);
+        commit();
+        return failures;
     }
 
     @Override public void close() throws Exception { writer.close(); dir.close(); }

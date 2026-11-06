@@ -63,12 +63,10 @@ class RecallTest extends Specification {
             testQueryCache << trainCache[i]
         }
 
-        // Add reactions one-by-one with explicit sequential xids matching trainCache.
-        // Cannot use indexer.addAll() because it uses parallelStream with AtomicInteger,
-        // which assigns xids in non-deterministic order.
+        // Index with IDs matching trainCache positions, so retrieved xids map back to train entries.
         try (def indexer = new ComplexIndexer(tempDir)) {
             for (entry in trainCache) {
-                indexer.addReaction(entry.smiles, entry.xid)
+                indexer.addReaction(entry.smiles, String.valueOf(entry.xid))
             }
         }
     }
@@ -88,10 +86,10 @@ class RecallTest extends Specification {
         def retrievedNoRerank = [] as List<List<Integer>>
         def retrievedRerank = [] as List<List<Integer>>
         for (test in testQueryCache) {
-            def resultsNoRerank = searcher.searchBySmiles(test.smiles, null, null, TOP_K, true, false, 0.0f, false)
-            def resultsRerank = searcher.searchBySmiles(test.smiles, null, null, TOP_K, true, false, 0.0f, true)
-            retrievedNoRerank << resultsNoRerank.collect { it.xid() }
-            retrievedRerank << resultsRerank.collect { it.xid() }
+            def resultsNoRerank = searcher.searchBySmiles(test.smiles, null, null, TOP_K, true, null, false)
+            def resultsRerank = searcher.searchBySmiles(test.smiles, null, null, TOP_K, true, null, true)
+            retrievedNoRerank << resultsNoRerank.collect { Integer.parseInt(it.xid()) }
+            retrievedRerank << resultsRerank.collect { Integer.parseInt(it.xid()) }
         }
         searcher.close()
 

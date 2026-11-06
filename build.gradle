@@ -1,7 +1,7 @@
 plugins {
     id 'java'
     id 'groovy'
-    id 'org.springframework.boot' version '3.5.3'
+    id 'org.springframework.boot' version '3.5.16'
     id 'io.spring.dependency-management' version '1.1.7'
 }
 
@@ -9,7 +9,7 @@ group = 'com.example'
 version = '0.0.1-SNAPSHOT'
 
 java {
-    toolchain { languageVersion = JavaLanguageVersion.of(19) }
+    toolchain { languageVersion = JavaLanguageVersion.of(21) }
 }
 
 repositories {
@@ -19,19 +19,22 @@ repositories {
 
 dependencyManagement {
     imports {
-        mavenBom "org.springframework.ai:spring-ai-bom:1.1.4"
+        mavenBom "org.springframework.ai:spring-ai-bom:1.1.8"
     }
 }
+
+// Patched releases of Boot-managed dependencies that Spring Boot 3.5.16 does not ship yet (Tomcat and Jackson CVEs).
+ext['tomcat.version'] = '10.1.61'
+ext['jackson-bom.version'] = '2.21.8'
 
 
 
 dependencies {
     // --- Your app deps (keep versions you need that Boot doesn't manage) ---
     implementation 'org.apache.lucene:lucene-core:9.12.2'
-    implementation 'org.apache.lucene:lucene-analysis-common:9.12.2'
-    implementation 'org.apache.lucene:lucene-queryparser:9.12.2'
 
     implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
     implementation "org.springframework.ai:spring-ai-starter-mcp-server-webmvc"
 
     def cdkVersion = '2.12'
@@ -39,24 +42,19 @@ dependencies {
     implementation "org.openscience.cdk:cdk-smiles:${cdkVersion}"
     implementation "org.openscience.cdk:cdk-smarts:${cdkVersion}"
     implementation "org.openscience.cdk:cdk-silent:${cdkVersion}"
-    implementation "org.openscience.cdk:cdk-hash:${cdkVersion}"
-    implementation "org.openscience.cdk:cdk-inchi:${cdkVersion}"
-    implementation "org.openscience.cdk:cdk-atomtype:${cdkVersion}"
-    implementation "org.openscience.cdk:cdk-descriptor:${cdkVersion}"
     implementation "org.openscience.cdk:cdk-fingerprint:${cdkVersion}"
+    implementation "org.openscience.cdk:cdk-atomtype:${cdkVersion}" // atom type definitions, loaded at runtime by the fingerprinters
 
-    implementation 'com.google.guava:guava:33.3.1-jre'
     // Let Spring Boot manage Jackson; remove the hard pin to 2.14.2 to avoid downgrading Boot.
     // implementation 'com.fasterxml.jackson.core:jackson-databind:2.14.2'
 
-    implementation 'org.zeromq:jeromq:0.5.3'
-    implementation 'org.codehaus.groovy:groovy-all:3.0.21'
+    testImplementation 'org.codehaus.groovy:groovy-all:3.0.21' // Spock tests only; main code is Java
 
     // --- Testing ---
     testImplementation 'org.springframework.boot:spring-boot-starter-test' // Brings JUnit Jupiter (and platform) in aligned versions
     // Keep only *one* Spock line, aligned with Groovy 3:
-    testImplementation 'org.spockframework:spock-core:2.3-groovy-3.0'
-    testImplementation 'org.spockframework:spock-spring:2.3-groovy-3.0'
+    testImplementation 'org.spockframework:spock-core:2.4-groovy-3.0'
+    testImplementation 'org.spockframework:spock-spring:2.4-groovy-3.0'
 
     // If you need the launcher at runtime (e.g., some IDEs), keep it without a version; Boot manages it.
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'

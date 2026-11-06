@@ -3,6 +3,7 @@ package org.retrosynthesis.mcp;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.retrosynthesis.index.Result;
+import org.retrosynthesis.index.SearchLimits;
 import org.retrosynthesis.index.Searcher;
 import org.springaicommunity.mcp.annotation.McpTool;
 import org.springaicommunity.mcp.annotation.McpToolParam;
@@ -29,21 +30,19 @@ public class SimilarityTools {
             description = "Search for chemical reactions similar to a query reaction.")
     public String searchSimilarReactions(
             @McpToolParam(description = "Reaction SMILES in reactants>>products format", required = true) String smiles,
-            @McpToolParam(description = "Maximum number of results to return", required = false) Integer knn,
+            @McpToolParam(description = "Maximum number of results to return, 1 to 1000 (default 10)", required = false) Integer knn,
             @McpToolParam(description = "Product SMILES for substructure filter", required = false) String subgraph,
             @McpToolParam(description = "Reaction SMARTS pattern to filter results", required = false) String rxnSmarts,
-            @McpToolParam(description = "When true, also scores candidates by product ECFP4 Tanimoto and returns it as ecfp_prod in similarities. Only active for this call.", required = false) Boolean productsim,
-            @McpToolParam(description = "Weight in [0,1] of the product ECFP4 Tanimoto in the final sim score when productsim=true. sim = (1 - productBoost) * reaction_score + productBoost * product_tanimoto. Ignored when productsim=false. Values outside [0,1] are clamped.", required = false) Float productBoost,
+            @McpToolParam(description = "Weight in [0,1] of product similarity. Omit to rank by reaction similarity only. When given, candidates are also scored by product ECFP4 Tanimoto (returned as ecfp_prod) and sim = (1 - productWeight) * reaction_score + productWeight * ecfp_prod. Values outside [0,1] are rejected.", required = false) Double productWeight,
             @McpToolParam(description = "Rerank results by exact Tanimoto similarity", required = false) Boolean rerank
     ) throws Exception {
         List<Result> results = searcher.searchBySmiles(
                 smiles,
                 subgraph,
                 rxnSmarts,
-                knn != null ? knn : 10,
+                SearchLimits.requireKnnWithinLimit(knn != null ? knn : SearchLimits.DEFAULT_KNN),
                 true,
-                productsim != null ? productsim : false,
-                productBoost != null ? productBoost : 0.0f,
+                productWeight,
                 rerank != null ? rerank : true
         );
         return mapper.writeValueAsString(results);
@@ -53,7 +52,7 @@ public class SimilarityTools {
             description = "Search for reactions whose product is similar to a query molecule (ECFP4 Tanimoto on the product side).")
     public String searchReactionsByMolecule(
             @McpToolParam(description = "Query molecule SMILES (not a reaction SMILES)", required = true) String smiles,
-            @McpToolParam(description = "Maximum number of results to return", required = false) Integer knn,
+            @McpToolParam(description = "Maximum number of results to return, 1 to 1000 (default 10)", required = false) Integer knn,
             @McpToolParam(description = "Molecule SMILES used as a product-side substructure filter (path fingerprint)", required = false) String subgraph,
             @McpToolParam(description = "Reaction SMARTS pattern to filter candidate reactions after retrieval", required = false) String rxnSmarts,
             @McpToolParam(description = "Rerank results by exact ECFP4 Tanimoto similarity", required = false) Boolean rerank
@@ -62,7 +61,7 @@ public class SimilarityTools {
                 smiles,
                 subgraph,
                 rxnSmarts,
-                knn != null ? knn : 10,
+                SearchLimits.requireKnnWithinLimit(knn != null ? knn : SearchLimits.DEFAULT_KNN),
                 rerank != null ? rerank : true
         );
         return mapper.writeValueAsString(results);

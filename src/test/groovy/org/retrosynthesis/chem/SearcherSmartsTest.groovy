@@ -20,9 +20,9 @@ class SearcherSmartsTest extends Specification {
         tempDir = Files.createTempDirectory("searcher-smarts-test")
 
         def indexer = new ComplexIndexer(tempDir)
-        indexer.addReaction(RXN_HYDROLYSIS, 1)
-        indexer.addReaction(RXN_COUPLING, 2)
-        indexer.addReaction(RXN_FLUORO_AMINATION, 3)
+        indexer.addReaction(RXN_HYDROLYSIS, "1")
+        indexer.addReaction(RXN_COUPLING, "2")
+        indexer.addReaction(RXN_FLUORO_AMINATION, "3")
         indexer.close()
     }
 
@@ -33,27 +33,27 @@ class SearcherSmartsTest extends Specification {
     def "rxnSmarts filters surviving search hits"() {
         when:
         List<Result> results = new Searcher(tempDir).withCloseable { searcher ->
-            searcher.searchBySmiles(RXN_FLUORO_AMINATION, null, "[F]", 5, true, false, 0.0f, true)
+            searcher.searchBySmiles(RXN_FLUORO_AMINATION, null, "[F]", 5, true, null, true)
         }
 
         then:
         results.size() == 1
         results.size() < 5
-        results*.xid == [3]
+        results*.xid == ["3"]
         results*.smiles == [RXN_FLUORO_AMINATION]
     }
 
     def "blank or null rxnSmarts leaves search results unfiltered"() {
         when:
         List<Result> nullResults = new Searcher(tempDir).withCloseable { searcher ->
-            searcher.searchBySmiles(RXN_FLUORO_AMINATION, null, null, 5, true, false, 0.0f, true)
+            searcher.searchBySmiles(RXN_FLUORO_AMINATION, null, null, 5, true, null, true)
         }
         List<Result> blankResults = new Searcher(tempDir).withCloseable { searcher ->
-            searcher.searchBySmiles(RXN_FLUORO_AMINATION, null, "   ", 5, true, false, 0.0f, true)
+            searcher.searchBySmiles(RXN_FLUORO_AMINATION, null, "   ", 5, true, null, true)
         }
 
         then:
-        nullResults*.xid == [3, 2]
+        nullResults*.xid == ["3", "2"]
         blankResults*.xid == nullResults*.xid
         blankResults*.smiles == nullResults*.smiles
     }

@@ -1,6 +1,10 @@
 spring:
   main:
     web-application-type: servlet
+  jackson:
+    deserialization:
+      # Unknown request fields are a 400 (see ApiExceptionHandler), not silently ignored.
+      fail-on-unknown-properties: true
   ai:
     mcp:
       server:
@@ -13,8 +17,16 @@ spring:
         annotation-scanner:
           enabled: true
 
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
 # Default index directory (can be overridden via environment variable)
 indexdir: ${INDEX_DIR:/app/index}
+# Read the whole index into memory at startup; by default pages are read on demand.
+preload: ${INDEX_PRELOAD:false}
 
 ---
 spring:
