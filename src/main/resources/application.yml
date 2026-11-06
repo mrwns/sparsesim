@@ -1,10 +1,10 @@
 spring:
   main:
     web-application-type: servlet
-  mvc:
-    # RFC 9457 problem details for framework errors (malformed JSON, 405, ...), matching our own 400s.
-    problemdetails:
-      enabled: true
+  jackson:
+    deserialization:
+      # Unknown request fields are a 400 (see ApiExceptionHandler), not silently ignored.
+      fail-on-unknown-properties: true
   ai:
     mcp:
       server:

@@ -170,6 +170,23 @@ class SearchControllerTest extends Specification {
         "/reactions/similarity/by-reaction" | [smiles: [RXN_COUPLING], weights: [:]]          | "weights must include product"
     }
 
+    def "unknown field #description on #path is a 400 naming it"() {
+        when:
+        def response = query(path, body)
+
+        then:
+        response.status == 400
+        response.contentType == MediaType.APPLICATION_PROBLEM_JSON_VALUE
+        json(response).detail == expected
+
+        where:
+        description            | path                                | body                                                          | expected
+        "knnn (typo)"          | "/reactions/similarity/by-reaction" | [smiles: [RXN_COUPLING], knnn: 5]                             | "Unknown field 'knnn'; allowed fields: knn, rerank, rxnSmarts, smiles, subgraph, weights"
+        "productsim (removed)" | "/reactions/similarity/by-reaction" | [smiles: [RXN_COUPLING], productsim: true]                    | "Unknown field 'productsim'; allowed fields: knn, rerank, rxnSmarts, smiles, subgraph, weights"
+        "weights on by-product" | "/reactions/similarity/by-product" | [smiles: [PROD_COUPLING], weights: [product: 0.5]]            | "Unknown field 'weights'; allowed fields: knn, rerank, rxnSmarts, smiles, subgraph"
+        "nested in weights"    | "/reactions/similarity/by-reaction" | [smiles: [RXN_COUPLING], weights: [product: 0.5, reaction: 1]] | "Unknown field 'weights.reaction'; allowed fields: product"
+    }
+
     def "malformed JSON is a 400 problem detail"() {
         when:
         def response = query("/reactions/similarity/by-reaction", "{")

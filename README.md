@@ -141,7 +141,7 @@ One list of hits per entry in `smiles`, in the same order:
 
 ### Errors
 
-Invalid requests get `400` with an [RFC 9457](https://www.rfc-editor.org/rfc/rfc9457) problem details body (`application/problem+json`) whose `detail` names the problem, e.g. `{"status": 400, "detail": "knn must be at most 1000, got 1001", ...}`. This covers: missing or empty `smiles`; invalid SMILES (including a molecule sent to `by-reaction` or a reaction to `by-product`), `subgraph` or `rxnSmarts`; `knn` outside 1 to 1000; `weights` without `product`, or `product` outside [0, 1]; `weights` for a reaction without products. One invalid entry in `smiles` fails the whole request.
+Invalid requests get `400` with an [RFC 9457](https://www.rfc-editor.org/rfc/rfc9457) problem details body (`application/problem+json`) whose `detail` names the problem, e.g. `{"status": 400, "detail": "knn must be at most 1000, got 1001", ...}`. This covers: unknown fields, e.g. `"Unknown field 'knnn'; allowed fields: knn, rerank, rxnSmarts, smiles, subgraph, weights"` (including `weights` sent to `by-product`); missing or empty `smiles`; invalid SMILES (including a molecule sent to `by-reaction` or a reaction to `by-product`), `subgraph` or `rxnSmarts`; `knn` outside 1 to 1000; `weights` without `product`, or `product` outside [0, 1]; `weights` for a reaction without products. One invalid entry in `smiles` fails the whole request.
 
 ### Health and info
 
