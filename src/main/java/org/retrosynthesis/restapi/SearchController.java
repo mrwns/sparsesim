@@ -31,7 +31,7 @@ public class SearchController {
     }
 
     /**
-     * JSON body for {@link #search(SearchRequest)}. Semantics match {@code SPARSESIM_ENDPOINT.md} ({@code QUERY /reactions/similarity/by-reaction}).
+     * JSON body for {@link #search(SearchRequest)}. Documented in {@code README.md} ({@code QUERY /reactions/similarity/by-reaction}).
      *
      * @param smiles       one or more query reaction SMILES (reactants {@literal >>} products)
      * @param knn          maximum Lucene hits per query string (before SMARTS post-filter), 1 to {@link SearchLimits#MAX_KNN}
