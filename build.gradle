@@ -32,8 +32,6 @@ ext['jackson-bom.version'] = '2.21.8'
 dependencies {
     // --- Your app deps (keep versions you need that Boot doesn't manage) ---
     implementation 'org.apache.lucene:lucene-core:9.12.2'
-    implementation 'org.apache.lucene:lucene-analysis-common:9.12.2'
-    implementation 'org.apache.lucene:lucene-queryparser:9.12.2'
 
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
@@ -44,17 +42,12 @@ dependencies {
     implementation "org.openscience.cdk:cdk-smiles:${cdkVersion}"
     implementation "org.openscience.cdk:cdk-smarts:${cdkVersion}"
     implementation "org.openscience.cdk:cdk-silent:${cdkVersion}"
-    implementation "org.openscience.cdk:cdk-hash:${cdkVersion}"
-    implementation "org.openscience.cdk:cdk-inchi:${cdkVersion}"
-    implementation "org.openscience.cdk:cdk-atomtype:${cdkVersion}"
-    implementation "org.openscience.cdk:cdk-descriptor:${cdkVersion}"
     implementation "org.openscience.cdk:cdk-fingerprint:${cdkVersion}"
+    implementation "org.openscience.cdk:cdk-atomtype:${cdkVersion}" // atom type definitions, loaded at runtime by the fingerprinters
 
-    implementation 'com.google.guava:guava:33.8.0-jre'
     // Let Spring Boot manage Jackson; remove the hard pin to 2.14.2 to avoid downgrading Boot.
     // implementation 'com.fasterxml.jackson.core:jackson-databind:2.14.2'
 
-    implementation 'org.zeromq:jeromq:0.5.3'
     testImplementation 'org.codehaus.groovy:groovy-all:3.0.21' // Spock tests only; main code is Java
 
     // --- Testing ---
