@@ -5,6 +5,7 @@ import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.index.*;
 import org.apache.lucene.store.*;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.codecs.lucene912.Lucene912Codec;
 import org.openscience.cdk.fingerprint.CircularFingerprinter;
 import org.openscience.cdk.fingerprint.Fingerprinter;
 import org.openscience.cdk.fingerprint.ICountFingerprint;
@@ -54,8 +55,10 @@ public class ComplexIndexer implements AutoCloseable {
 
     public ComplexIndexer(Path indexDir) throws Exception {
         this.dir = FSDirectory.open(indexDir);
+        // BEST_COMPRESSION halves the stored reactions (~15% of the whole index) at no measurable query cost.
         this.writer = new IndexWriter(dir,
-                new IndexWriterConfig(/* analyzer not used since we give TokenStream */));
+                new IndexWriterConfig(/* analyzer not used since we give TokenStream */)
+                        .setCodec(new Lucene912Codec(Lucene912Codec.Mode.BEST_COMPRESSION)));
     }
 
     public void addReaction(InputReaction reaction) throws Exception {

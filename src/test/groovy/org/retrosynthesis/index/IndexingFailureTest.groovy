@@ -1,5 +1,9 @@
 package org.retrosynthesis.index
 
+import org.apache.lucene.codecs.lucene90.Lucene90StoredFieldsFormat
+import org.apache.lucene.index.DirectoryReader
+import org.apache.lucene.index.SegmentReader
+import org.apache.lucene.store.FSDirectory
 import spock.lang.Specification
 
 import java.nio.file.Files
@@ -54,6 +58,20 @@ class IndexingFailureTest extends Specification {
 
         then: "the file is emptied rather than left stale"
         Files.readAllLines(file).isEmpty()
+    }
+
+    def "new indexes store reactions with BEST_COMPRESSION"() {
+        given:
+        new ComplexIndexer(dir).withCloseable { it.addAll(InputReaction.fromLines(TRAIN.take(50))) }
+
+        when:
+        def modes = DirectoryReader.open(FSDirectory.open(dir)).withCloseable { reader ->
+            reader.leaves().collect { (it.reader() as SegmentReader).segmentInfo.info.getAttribute(Lucene90StoredFieldsFormat.MODE_KEY) }
+        }
+
+        then:
+        !modes.isEmpty()
+        modes.every { it == "BEST_COMPRESSION" }
     }
 
     def "an index directory containing the err file still opens and searches"() {
