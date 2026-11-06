@@ -115,7 +115,7 @@ curl -sS -X QUERY "http://localhost:8080/reactions/similarity/by-reaction" \
 
 Request fields:
 - **`smiles`** (required): list of reaction SMILES to search for
-- **`knn`** (optional): number of nearest neighbors to return (default: 10)
+- **`knn`** (optional): number of nearest neighbors to return, 1 to 1000 (default: 10)
 - **`productsim`** (optional): include product similarity signal (default: false)
 - **`subgraph`** (optional): product substructure filter SMILES (default: null)
 - **`productBoost`** (optional): weighting for product similarity (default: 0.0)

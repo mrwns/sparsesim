@@ -2,6 +2,7 @@ package org.retrosynthesis.restapi;
 
 import org.retrosynthesis.index.InvalidQueryException;
 import org.retrosynthesis.index.Result;
+import org.retrosynthesis.index.SearchLimits;
 import org.retrosynthesis.index.Searcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,7 +34,7 @@ public class SearchController {
      * JSON body for {@link #search(SearchRequest)}. Semantics match {@code SPARSESIM_ENDPOINT.md} ({@code QUERY /reactions/similarity/by-reaction}).
      *
      * @param smiles       one or more query reaction SMILES (reactants {@literal >>} products)
-     * @param knn          maximum Lucene hits per query string (before SMARTS post-filter)
+     * @param knn          maximum Lucene hits per query string (before SMARTS post-filter), 1 to {@link SearchLimits#MAX_KNN}
      * @param productsim   when {@code true}, adds a count-aware product ECFP4 Lucene {@code SHOULD}, computes
      *                     {@code ecfp_prod} per hit, and blends it into {@code sim}; when {@code false}, pure reaction similarity
      * @param subgraph     optional product SMILES for a path-fingerprint substructure {@code FILTER}; may be {@code null}
@@ -64,7 +65,7 @@ public class SearchController {
         ) {
             return new SearchRequest(
                     smiles,
-                    knn != null ? knn : 10,
+                    knn != null ? knn : SearchLimits.DEFAULT_KNN,
                     productsim != null ? productsim : false,
                     subgraph,
                     rxnSmarts,
@@ -78,7 +79,7 @@ public class SearchController {
      * JSON body for {@link #molSearch(MolSearchRequest)} ({@code QUERY /reactions/similarity/by-product}).
      *
      * @param smiles     one or more query molecule SMILES (not reaction SMILES)
-     * @param knn        maximum Lucene hits per query string
+     * @param knn        maximum Lucene hits per query string, 1 to {@link SearchLimits#MAX_KNN}
      * @param subgraph   optional molecule SMILES for product path-fingerprint substructure filter; may be {@code null}
      * @param rxnSmarts  optional SMARTS filter on the full reaction after retrieval; may be {@code null}
      * @param rerank     when {@code true}, sort by product ECFP4 Tanimoto ({@code sim}) descending
@@ -100,7 +101,7 @@ public class SearchController {
         ) {
             return new MolSearchRequest(
                     smiles,
-                    knn != null ? knn : 10,
+                    knn != null ? knn : SearchLimits.DEFAULT_KNN,
                     subgraph,
                     rxnSmarts,
                     rerank != null ? rerank : true
@@ -119,6 +120,7 @@ public class SearchController {
         logger.info("Search request: {}", request);
         
         requireSmiles(request.smiles);
+        SearchLimits.requireKnnWithinLimit(request.knn);
         List<List<Result>> results = new ArrayList<>();
         for (String smiles : request.smiles) {
 
@@ -150,6 +152,7 @@ public class SearchController {
         logger.info("Mol search request: {}", request);
 
         requireSmiles(request.smiles);
+        SearchLimits.requireKnnWithinLimit(request.knn);
         List<List<Result>> results = new ArrayList<>();
         for (String smiles : request.smiles) {
 

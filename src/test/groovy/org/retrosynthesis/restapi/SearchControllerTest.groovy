@@ -156,6 +156,8 @@ class SearchControllerTest extends Specification {
         "/reactions/similarity/by-reaction" | [smiles: [RXN_COUPLING], rxnSmarts: "[[["]    | "Invalid rxnSmarts"
         "/reactions/similarity/by-reaction" | [smiles: [RXN_COUPLING], knn: 0]              | "knn must be at least 1"
         "/reactions/similarity/by-product"  | [smiles: ["CCO"], knn: -1]                    | "knn must be at least 1"
+        "/reactions/similarity/by-reaction" | [smiles: [RXN_COUPLING], knn: 1001]           | "knn must be at most 1000, got 1001"
+        "/reactions/similarity/by-product"  | [smiles: ["CCO"], knn: 5000]                  | "knn must be at most 1000, got 5000"
         "/reactions/similarity/by-reaction" | [smiles: ["CCO>>"], productsim: true]         | "productsim requires a reaction with products"
     }
 

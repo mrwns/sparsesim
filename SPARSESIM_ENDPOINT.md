@@ -15,7 +15,7 @@ JSON object with the following properties:
 | Field | Type | Required | Default | Description |
 |--------|------|----------|---------|-------------|
 | `smiles` | `string[]` | yes | — | One or more query **reaction SMILES** (reactants `>>` products). Each string is searched independently. |
-| `knn` | `integer` | no | `10` | Maximum number of **Lucene hits** to retrieve per query string (see note below on post-filters). |
+| `knn` | `integer` | no | `10` | Maximum number of **Lucene hits** to retrieve per query string, from 1 to 1000 (see note below on post-filters). |
 | `productsim` | `boolean` | no | `false` | When `true`, (1) broadens Lucene retrieval with a **count-aware** product ECFP4 `SHOULD` clause using the main product of each query reaction, (2) computes product ECFP4 Tanimoto for every surviving candidate, (3) surfaces that score as `ecfp_prod` in the `similarities` map, and (4) blends it into the final `sim` score via `productBoost`. When `false`, the response shape and scoring are unchanged from pure reaction similarity. |
 | `subgraph` | `string` \| omitted / `null` | no | `null` | If set, non-blank **product SMILES** used as a **substructure filter**: only indexed reactions whose product matches this subgraph (path fingerprint, required match) are considered. |
 | `rxnSmarts` | `string` \| omitted / `null` | no | `null` | If set, non-blank **SMARTS** pattern used to **filter** candidate reactions **after** Lucene retrieval. Reaction SMARTS (pattern contains `>`) is matched against the full reaction; otherwise it is treated as a molecule pattern. Blank or omitted means no SMARTS filter. |
@@ -31,7 +31,7 @@ Invalid requests get **`400 Bad Request`** with an [RFC 9457](https://www.rfc-ed
 - `smiles` missing, `null` or empty
 - an entry of `smiles`, or `subgraph`, that is not valid (reaction) SMILES
 - `rxnSmarts` that is not valid SMARTS
-- `knn` below 1
+- `knn` outside 1 to 1000
 - `productsim=true` for a reaction without products
 
 One invalid entry in `smiles` fails the whole request.
@@ -177,7 +177,7 @@ Molecule-based similarity search over the **product side** of the indexed reacti
 | Field | Type | Required | Default | Description |
 |--------|------|----------|---------|-------------|
 | `smiles` | `string[]` | yes | — | One or more query **molecule SMILES** (not reaction SMILES). Each is searched independently. |
-| `knn` | `integer` | no | `10` | Maximum number of Lucene hits to retrieve per query string (before SMARTS post-filter). |
+| `knn` | `integer` | no | `10` | Maximum number of Lucene hits to retrieve per query string (before SMARTS post-filter), from 1 to 1000. |
 | `subgraph` | `string` \| omitted / `null` | no | `null` | If set, non-blank molecule SMILES used as a **substructure filter** on the indexed **product path fingerprint** (required match). |
 | `rxnSmarts` | `string` \| omitted / `null` | no | `null` | Optional SMARTS applied against the full stored reaction after Lucene retrieval. Behaves identically to `rxnSmarts` on `QUERY /reactions/similarity/by-reaction`. |
 | `rerank` | `boolean` | no | `true` | When `true`, results are sorted by the recomputed **ECFP4 Tanimoto** (`sim`) descending. |
