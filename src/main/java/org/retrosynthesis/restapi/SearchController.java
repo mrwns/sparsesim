@@ -35,44 +35,56 @@ public class SearchController {
      *
      * @param smiles       one or more query reaction SMILES (reactants {@literal >>} products)
      * @param knn          maximum Lucene hits per query string (before SMARTS post-filter), 1 to {@link SearchLimits#MAX_KNN}
-     * @param productsim   when {@code true}, adds a count-aware product ECFP4 Lucene {@code SHOULD}, computes
-     *                     {@code ecfp_prod} per hit, and blends it into {@code sim}; when {@code false}, pure reaction similarity
+     * @param weights      optional score weights; omitted for pure reaction similarity, see {@link Weights}
      * @param subgraph     optional product SMILES for a path-fingerprint substructure {@code FILTER}; may be {@code null}
      * @param rxnSmarts    optional SMARTS filter on the full reaction after retrieval; may be {@code null}
-     * @param productBoost weight in {@code [0, 1]} of {@code ecfp_prod} in the final {@code sim} when {@code productsim} is
-     *                     {@code true}; ignored when {@code false}. Values outside the range are clamped. Does not scale the
-     *                     Lucene product query (fixed boost there); see API docs.
      * @param rerank       when {@code true}, sort by {@code sim} descending
      */
     public record SearchRequest(
             List<String> smiles,
             int knn,
-            boolean productsim,
+            Weights weights,
             String subgraph,
             String rxnSmarts,
-            float productBoost,
             boolean rerank
     ) {
         @JsonCreator
         public static SearchRequest create(
                 @JsonProperty("smiles") List<String> smiles,
                 @JsonProperty("knn") Integer knn,
-                @JsonProperty("productsim") Boolean productsim,
+                @JsonProperty("weights") Weights weights,
                 @JsonProperty("subgraph") String subgraph,
                 @JsonProperty("rxnSmarts") String rxnSmarts,
-                @JsonProperty("productBoost") Float productBoost,
                 @JsonProperty("rerank") Boolean rerank
         ) {
             return new SearchRequest(
                     smiles,
                     knn != null ? knn : SearchLimits.DEFAULT_KNN,
-                    productsim != null ? productsim : false,
+                    weights,
                     subgraph,
                     rxnSmarts,
-                    productBoost != null ? productBoost : 0.0f,
                     rerank != null ? rerank : true
             );
         }
+
+        /** The product weight to search with, or {@code null} for pure reaction similarity. */
+        Double productWeight() {
+            if (weights == null) {
+                return null;
+            }
+            if (weights.product() == null) {
+                throw new InvalidQueryException("weights must include product");
+            }
+            return weights.product();
+        }
+    }
+
+    /**
+     * Score weights. Giving {@code product} turns on product similarity: it broadens retrieval, is reported as
+     * {@code ecfp_prod}, and is blended into {@code sim = (1 - product) * reaction_score + product * ecfp_prod};
+     * it must be in {@code [0, 1]}.
+     */
+    public record Weights(Double product) {
     }
 
     /**
@@ -121,6 +133,7 @@ public class SearchController {
         
         requireSmiles(request.smiles);
         SearchLimits.requireKnnWithinLimit(request.knn);
+        Double productWeight = request.productWeight();
         List<List<Result>> results = new ArrayList<>();
         for (String smiles : request.smiles) {
 
@@ -130,8 +143,7 @@ public class SearchController {
                 request.rxnSmarts,
                 request.knn,
                 true,
-                request.productsim,
-                request.productBoost,
+                productWeight,
                 request.rerank
             ));
         }

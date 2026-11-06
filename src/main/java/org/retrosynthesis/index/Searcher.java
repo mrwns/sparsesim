@@ -131,7 +131,7 @@ public class Searcher implements AutoCloseable {
 
     public List<Result> searchBySmiles(String querySmiles, int topK) throws Exception {
     
-        return searchBySmiles(querySmiles, null, null, topK, true, false, 0.0f, true);
+        return searchBySmiles(querySmiles, null, null, topK, true, null, true);
     }
 
     /**
@@ -218,11 +218,22 @@ public class Searcher implements AutoCloseable {
         return out;
     }
     
-    public List<Result> searchBySmiles(String queryRxnSmiles, String subgraphSmiles, String rxnSmarts, int topK, boolean reactionSim, boolean productsim, float productBoost, boolean rerank) throws Exception {
+    /**
+     * Reaction similarity search.
+     *
+     * @param productWeight {@code null} to rank by reaction similarity only. Otherwise product similarity is also
+     *                      used: it broadens retrieval, is reported as {@code ecfp_prod}, and is blended into
+     *                      {@code sim = (1 - productWeight) * reaction_score + productWeight * ecfp_prod}.
+     *                      Must be in {@code [0, 1]}.
+     */
+    public List<Result> searchBySmiles(String queryRxnSmiles, String subgraphSmiles, String rxnSmarts, int topK, boolean reactionSim, Double productWeight, boolean rerank) throws Exception {
 
         requireValidTopK(topK);
 
-        float pb = Math.max(0.0f, Math.min(1.0f, productBoost));
+        boolean productsim = productWeight != null;
+        if (productsim && !(productWeight >= 0.0 && productWeight <= 1.0)) {
+            throw new InvalidQueryException("product weight must be between 0 and 1, got " + productWeight);
+        }
 
         IReaction rxn = parseQueryReaction(queryRxnSmiles);
 
@@ -265,7 +276,7 @@ public class Searcher implements AutoCloseable {
         if (productsim) {
 
             if (rxn.getProductCount() == 0) {
-                throw new InvalidQueryException("productsim requires a reaction with products: " + queryRxnSmiles);
+                throw new InvalidQueryException("a product weight requires a reaction with products: " + queryRxnSmiles);
             }
 
             ecfpr = new CircularFingerprinter(CircularFingerprinter.CLASS_ECFP4);
@@ -312,7 +323,7 @@ public class Searcher implements AutoCloseable {
                 ICountFingerprint resProductEcfp = ecfpr.getCountFingerprint(products(resrxn));
                 double prodtanimoto = Tanimoto.method1(queryProductEcfp, resProductEcfp);
 
-                total = (1.0 - pb) * reactionScore + pb * prodtanimoto;
+                total = (1.0 - productWeight) * reactionScore + productWeight * prodtanimoto;
                 similarities = Map.of(
                     "ecfp4", ecfptanimoto,
                     "path_" + pathDepth, pathtanimoto,

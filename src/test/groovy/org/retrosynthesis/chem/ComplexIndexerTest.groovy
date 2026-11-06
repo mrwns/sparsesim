@@ -116,8 +116,8 @@ class ComplexIndexerTest extends Specification {
               println(rxn)
 
             // String product = rxn.split(">")[2];
-             // (String queryRxnSmiles, String subgraphSmiles, int topK, boolean reactionSim, boolean productsim, float productBoost, boolean rerank)
-              List<Result> results = searcher.searchBySmiles(rxn, null, null, 5, true, true, 1.0f, false);
+             // (String queryRxnSmiles, String subgraphSmiles, String rxnSmarts, int topK, boolean reactionSim, Double productWeight, boolean rerank)
+              List<Result> results = searcher.searchBySmiles(rxn, null, null, 5, true, 1.0d, false);
 
                 ICountFingerprint ref = fp.getCountFingerprint(SmilesXMol.reaction(rxn));
 //                def fp2 = fp.getCountFingerprint(SmilesXMol.reaction(rxnf));

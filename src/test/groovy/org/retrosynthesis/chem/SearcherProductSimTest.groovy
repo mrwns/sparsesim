@@ -1,6 +1,7 @@
 package org.retrosynthesis.chem
 
 import org.retrosynthesis.index.ComplexIndexer
+import org.retrosynthesis.index.InvalidQueryException
 import org.retrosynthesis.index.Result
 import org.retrosynthesis.index.Searcher
 import spock.lang.Specification
@@ -33,10 +34,10 @@ class SearcherProductSimTest extends Specification {
         tempDir.toFile().deleteDir()
     }
 
-    def "productsim=false preserves legacy similarities shape"() {
+    def "no product weight preserves legacy similarities shape"() {
         when:
         List<Result> results = new Searcher(tempDir).withCloseable { searcher ->
-            searcher.searchBySmiles(RXN_FLUORO_AMINATION, null, null, 5, true, false, 0.0f, true)
+            searcher.searchBySmiles(RXN_FLUORO_AMINATION, null, null, 5, true, null, true)
         }
 
         then:
@@ -46,10 +47,10 @@ class SearcherProductSimTest extends Specification {
         results.every { !it.similarities().containsKey("ecfp_prod") }
     }
 
-    def "productsim=true surfaces ecfp_prod in similarities for every hit"() {
+    def "a product weight surfaces ecfp_prod in similarities for every hit"() {
         when:
         List<Result> results = new Searcher(tempDir).withCloseable { searcher ->
-            searcher.searchBySmiles(RXN_FLUORO_AMINATION, null, null, 5, true, true, 0.0f, true)
+            searcher.searchBySmiles(RXN_FLUORO_AMINATION, null, null, 5, true, 0.0d, true)
         }
 
         then:
@@ -60,10 +61,10 @@ class SearcherProductSimTest extends Specification {
         results[0].xid() == "3"
     }
 
-    def "productsim=true, productBoost=0 keeps sim equal to reaction-only blend"() {
+    def "product weight 0 keeps sim equal to reaction-only blend"() {
         when:
         List<Result> results = new Searcher(tempDir).withCloseable { searcher ->
-            searcher.searchBySmiles(RXN_FLUORO_AMINATION, null, null, 5, true, true, 0.0f, false)
+            searcher.searchBySmiles(RXN_FLUORO_AMINATION, null, null, 5, true, 0.0d, false)
         }
 
         then:
@@ -74,10 +75,10 @@ class SearcherProductSimTest extends Specification {
         }
     }
 
-    def "productsim=true, productBoost=1 makes sim equal to ecfp_prod"() {
+    def "product weight 1 makes sim equal to ecfp_prod"() {
         when:
         List<Result> results = new Searcher(tempDir).withCloseable { searcher ->
-            searcher.searchBySmiles(RXN_FLUORO_AMINATION, null, null, 5, true, true, 1.0f, false)
+            searcher.searchBySmiles(RXN_FLUORO_AMINATION, null, null, 5, true, 1.0d, false)
         }
 
         then:
@@ -87,10 +88,10 @@ class SearcherProductSimTest extends Specification {
         }
     }
 
-    def "productsim=true, productBoost=0.5 blends reaction and product scores"() {
+    def "product weight 0.5 blends reaction and product scores"() {
         when:
         List<Result> results = new Searcher(tempDir).withCloseable { searcher ->
-            searcher.searchBySmiles(RXN_FLUORO_AMINATION, null, null, 5, true, true, 0.5f, false)
+            searcher.searchBySmiles(RXN_FLUORO_AMINATION, null, null, 5, true, 0.5d, false)
         }
 
         then:
@@ -102,32 +103,24 @@ class SearcherProductSimTest extends Specification {
         }
     }
 
-    def "productBoost is clamped above 1 and below 0"() {
+    def "product weight #weight outside [0, 1] is rejected"() {
         when:
-        List<Result> above = new Searcher(tempDir).withCloseable { searcher ->
-            searcher.searchBySmiles(RXN_FLUORO_AMINATION, null, null, 5, true, true, 2.5f, false)
-        }
-        List<Result> atOne = new Searcher(tempDir).withCloseable { searcher ->
-            searcher.searchBySmiles(RXN_FLUORO_AMINATION, null, null, 5, true, true, 1.0f, false)
-        }
-        List<Result> below = new Searcher(tempDir).withCloseable { searcher ->
-            searcher.searchBySmiles(RXN_FLUORO_AMINATION, null, null, 5, true, true, -1.0f, false)
-        }
-        List<Result> atZero = new Searcher(tempDir).withCloseable { searcher ->
-            searcher.searchBySmiles(RXN_FLUORO_AMINATION, null, null, 5, true, true, 0.0f, false)
+        new Searcher(tempDir).withCloseable { searcher ->
+            searcher.searchBySmiles(RXN_FLUORO_AMINATION, null, null, 5, true, weight, false)
         }
 
         then:
-        above.size() == atOne.size()
-        [above, atOne].transpose().every { a, b -> Math.abs(a.sim() - b.sim()) < EPS }
-        below.size() == atZero.size()
-        [below, atZero].transpose().every { a, b -> Math.abs(a.sim() - b.sim()) < EPS }
+        def e = thrown(InvalidQueryException)
+        e.message == "product weight must be between 0 and 1, got $weight"
+
+        where:
+        weight << [-0.1d, 1.5d, Double.NaN]
     }
 
     def "self-match scores ecfp_prod near 1.0"() {
         when:
         List<Result> results = new Searcher(tempDir).withCloseable { searcher ->
-            searcher.searchBySmiles(RXN_FLUORO_AMINATION, null, null, 5, true, true, 0.5f, true)
+            searcher.searchBySmiles(RXN_FLUORO_AMINATION, null, null, 5, true, 0.5d, true)
         }
 
         then:

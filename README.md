@@ -91,7 +91,7 @@ java -jar build/libs/*.jar \
   --indexdir=./index
 ```
 
-With MCP enabled, clients typically connect to the SSE endpoint at `http://localhost:8080/sse` and send messages to `/mcp/message` (see `spring.ai.mcp.server` in `application.yml`). The exposed tool is **`search_similar_reactions`** (reaction SMILES plus optional `knn`, `subgraph`, `productsim`, `productBoost`, `rerank`), implemented in `org.retrosynthesis.mcp.SimilarityTools`.
+With MCP enabled, clients typically connect to the SSE endpoint at `http://localhost:8080/sse` and send messages to `/mcp/message` (see `spring.ai.mcp.server` in `application.yml`). The exposed tool is **`search_similar_reactions`** (reaction SMILES plus optional `knn`, `subgraph`, `rxnSmarts`, `productWeight`, `rerank`), implemented in `org.retrosynthesis.mcp.SimilarityTools`.
 
 ## Query the index
 
@@ -107,18 +107,16 @@ curl -sS -X QUERY "http://localhost:8080/reactions/similarity/by-reaction" \
   -d '{
     "smiles": ["CCO.O=O>>CC(=O)O"],
     "knn": 10,
-    "productsim": false,
-    "subgraph": null,
-    "productBoost": 0.2
+    "weights": {"product": 0.2},
+    "subgraph": null
   }'
 ```
 
 Request fields:
 - **`smiles`** (required): list of reaction SMILES to search for
 - **`knn`** (optional): number of nearest neighbors to return, 1 to 1000 (default: 10)
-- **`productsim`** (optional): include product similarity signal (default: false)
 - **`subgraph`** (optional): product substructure filter SMILES (default: null)
-- **`productBoost`** (optional): weighting for product similarity (default: 0.0)
+- **`weights`** (optional): `{"product": w}` with `w` in [0, 1] also scores product similarity and ranks by `(1 - w) * reaction score + w * product score`; omit for reaction similarity only
 - **`rerank`** (optional): rerank hits by exact Tanimoto similarity (default: true)
 
 Response: a JSON array of arrays (one inner array per input SMILES). Each element is a result object:
@@ -144,7 +142,7 @@ Response: a JSON array of arrays (one inner array per input SMILES). Each elemen
 | `smiles`       | `string`            | Matched reaction SMILES                                            |
 | `sim`          | `number`            | Overall similarity score (average of the individual fingerprints)  |
 | `xid`          | `string`            | ID of the matched reaction: as given in the input file, or `rxn_<i>` |
-| `similarities` | `map<string,number>` | Per-fingerprint Tanimoto scores: reaction `ecfp4` and `path_6`, plus product `ecfp_prod` with `productsim` |
+| `similarities` | `map<string,number>` | Per-fingerprint Tanimoto scores: reaction `ecfp4` and `path_6`, plus product `ecfp_prod` with `weights.product` |
 
 ## Docker (optional)
 

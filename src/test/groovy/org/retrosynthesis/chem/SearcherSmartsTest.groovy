@@ -33,7 +33,7 @@ class SearcherSmartsTest extends Specification {
     def "rxnSmarts filters surviving search hits"() {
         when:
         List<Result> results = new Searcher(tempDir).withCloseable { searcher ->
-            searcher.searchBySmiles(RXN_FLUORO_AMINATION, null, "[F]", 5, true, false, 0.0f, true)
+            searcher.searchBySmiles(RXN_FLUORO_AMINATION, null, "[F]", 5, true, null, true)
         }
 
         then:
@@ -46,10 +46,10 @@ class SearcherSmartsTest extends Specification {
     def "blank or null rxnSmarts leaves search results unfiltered"() {
         when:
         List<Result> nullResults = new Searcher(tempDir).withCloseable { searcher ->
-            searcher.searchBySmiles(RXN_FLUORO_AMINATION, null, null, 5, true, false, 0.0f, true)
+            searcher.searchBySmiles(RXN_FLUORO_AMINATION, null, null, 5, true, null, true)
         }
         List<Result> blankResults = new Searcher(tempDir).withCloseable { searcher ->
-            searcher.searchBySmiles(RXN_FLUORO_AMINATION, null, "   ", 5, true, false, 0.0f, true)
+            searcher.searchBySmiles(RXN_FLUORO_AMINATION, null, "   ", 5, true, null, true)
         }
 
         then:

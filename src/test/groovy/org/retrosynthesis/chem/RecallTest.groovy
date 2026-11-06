@@ -86,8 +86,8 @@ class RecallTest extends Specification {
         def retrievedNoRerank = [] as List<List<Integer>>
         def retrievedRerank = [] as List<List<Integer>>
         for (test in testQueryCache) {
-            def resultsNoRerank = searcher.searchBySmiles(test.smiles, null, null, TOP_K, true, false, 0.0f, false)
-            def resultsRerank = searcher.searchBySmiles(test.smiles, null, null, TOP_K, true, false, 0.0f, true)
+            def resultsNoRerank = searcher.searchBySmiles(test.smiles, null, null, TOP_K, true, null, false)
+            def resultsRerank = searcher.searchBySmiles(test.smiles, null, null, TOP_K, true, null, true)
             retrievedNoRerank << resultsNoRerank.collect { Integer.parseInt(it.xid()) }
             retrievedRerank << resultsRerank.collect { Integer.parseInt(it.xid()) }
         }

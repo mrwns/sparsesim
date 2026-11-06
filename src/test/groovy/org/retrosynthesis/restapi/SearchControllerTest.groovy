@@ -82,13 +82,19 @@ class SearchControllerTest extends Specification {
         top.similarities.keySet() == ["ecfp4", "path_6"] as Set
     }
 
-    def "productsim adds the product score as ecfp_prod"() {
+    def "weights.product adds the product score as ecfp_prod and blends it into sim"() {
         when:
-        def response = query("/reactions/similarity/by-reaction", [smiles: [RXN_COUPLING], productsim: true])
+        def response = query("/reactions/similarity/by-reaction", [smiles: [RXN_HYDROLYSIS], weights: [product: 0.25]])
 
         then:
         response.status == 200
-        json(response)[0][0].similarities.keySet() == ["ecfp4", "path_6", "ecfp_prod"] as Set
+        def hits = json(response)[0]
+        hits.every { it.similarities.keySet() == ["ecfp4", "path_6", "ecfp_prod"] as Set }
+        hits.every { hit ->
+            def s = hit.similarities
+            double expected = 0.75d * (s.ecfp4 + s.path_6) / 2 + 0.25d * s.ecfp_prod
+            Math.abs(hit.sim - expected) < 1e-9
+        }
     }
 
     def "blank subgraph on #path means no filter, like omitting it"() {
@@ -158,7 +164,10 @@ class SearchControllerTest extends Specification {
         "/reactions/similarity/by-product"  | [smiles: ["CCO"], knn: -1]                    | "knn must be at least 1"
         "/reactions/similarity/by-reaction" | [smiles: [RXN_COUPLING], knn: 1001]           | "knn must be at most 1000, got 1001"
         "/reactions/similarity/by-product"  | [smiles: ["CCO"], knn: 5000]                  | "knn must be at most 1000, got 5000"
-        "/reactions/similarity/by-reaction" | [smiles: ["CCO>>"], productsim: true]         | "productsim requires a reaction with products"
+        "/reactions/similarity/by-reaction" | [smiles: ["CCO>>"], weights: [product: 0.5]]   | "a product weight requires a reaction with products"
+        "/reactions/similarity/by-reaction" | [smiles: [RXN_COUPLING], weights: [product: 1.5]] | "product weight must be between 0 and 1, got 1.5"
+        "/reactions/similarity/by-reaction" | [smiles: [RXN_COUPLING], weights: [product: -0.1]] | "product weight must be between 0 and 1, got -0.1"
+        "/reactions/similarity/by-reaction" | [smiles: [RXN_COUPLING], weights: [:]]          | "weights must include product"
     }
 
     def "malformed JSON is a 400 problem detail"() {
