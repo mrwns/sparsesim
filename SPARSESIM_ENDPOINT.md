@@ -55,7 +55,7 @@ For **each** entry in `smiles`, the server:
 1. **Parses** the string as a reaction and builds **reaction** fingerprints (ECFP-style and path, depth 6 for path).
 2. **Builds a Lucene boolean query:**
    - **Reaction similarity (always on for this endpoint):** `SHOULD` clauses on indexed reaction ECFP and path count fingerprints.
-   - **`subgraph`:** If provided, adds a **`FILTER`** clause: the indexed reaction’s **product** must contain the given subgraph (binary path fingerprint terms, all required).
+   - **`subgraph`:** If provided and non-blank, adds a **`FILTER`** clause: the indexed reaction’s **product** must contain the given subgraph (binary path fingerprint terms, all required).
    - **`productsim`:** If `true`, adds a **count-aware `SHOULD`** clause derived from the query reaction’s **main product** ECFP4 counts against the product ECFP field (`prod_ecfp`, fixed Lucene term boost of `1.0` — the `productBoost` parameter is applied later at the scoring stage, not here).
 3. **Runs** Lucene with `knn` as the **top‑K** cap on scored hits.
 4. **For each hit**, loads the stored reaction and computes **Tanimoto** similarity between query and candidate for both reaction ECFP and path fingerprints:

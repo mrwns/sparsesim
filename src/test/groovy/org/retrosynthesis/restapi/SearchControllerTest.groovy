@@ -90,6 +90,24 @@ class SearchControllerTest extends Specification {
         json(response)[0][0].similarities.keySet() == ["ecfp4", "path_6", "ecfp_prod"] as Set
     }
 
+    def "blank subgraph on #path means no filter, like omitting it"() {
+        when:
+        def omitted = query(path, [smiles: [smiles]])
+        def blank = query(path, [smiles: [smiles], subgraph: subgraph])
+
+        then:
+        blank.status == 200
+        !json(omitted)[0].isEmpty()
+        json(blank) == json(omitted)
+
+        where:
+        path                                | smiles        | subgraph
+        "/reactions/similarity/by-reaction" | RXN_COUPLING  | ""
+        "/reactions/similarity/by-reaction" | RXN_COUPLING  | "  "
+        "/reactions/similarity/by-product"  | PROD_COUPLING | ""
+        "/reactions/similarity/by-product"  | PROD_COUPLING | "  "
+    }
+
     def "QUERY /reactions/similarity/by-product reports its product score as ecfp_prod"() {
         when:
         def response = query("/reactions/similarity/by-product", [smiles: [PROD_COUPLING]])

@@ -246,7 +246,7 @@ public class Searcher implements AutoCloseable {
 
         }
 
-        if (subgraphSmiles != null) {
+        if (subgraphSmiles != null && !subgraphSmiles.isBlank()) {
 
             IAtomContainer productMol = parseQueryMol(subgraphSmiles, "subgraph");
 
