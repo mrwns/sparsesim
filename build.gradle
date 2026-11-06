@@ -55,7 +55,7 @@ dependencies {
     // implementation 'com.fasterxml.jackson.core:jackson-databind:2.14.2'
 
     implementation 'org.zeromq:jeromq:0.5.3'
-    implementation 'org.codehaus.groovy:groovy-all:3.0.21'
+    testImplementation 'org.codehaus.groovy:groovy-all:3.0.21' // Spock tests only; main code is Java
 
     // --- Testing ---
     testImplementation 'org.springframework.boot:spring-boot-starter-test' // Brings JUnit Jupiter (and platform) in aligned versions
