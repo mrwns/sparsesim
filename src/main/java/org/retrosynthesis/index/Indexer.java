@@ -14,9 +14,7 @@ import org.retrosynthesis.chem.SmilesXMol;
 import static org.retrosynthesis.index.FieldNames.*;
 
 import java.nio.file.Path;
-import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
 public class Indexer implements AutoCloseable {
@@ -40,17 +38,17 @@ public class Indexer implements AutoCloseable {
     }
 
     public void addReaction(InputReaction reaction) throws Exception {
-        addReaction(reaction.smiles(), reaction.xrnid());
+        addReaction(reaction.smiles(), reaction.id());
     }
 
 
-    public void addReaction(String smiles, long xrnid) throws Exception {
+    public void addReaction(String smiles, String id) throws Exception {
         try {
         
         var doc = new Document();
         
         doc.add(new StoredField(FIELD_RXN_SMILES, smiles));
-        doc.add(new IntField(FIELD_RXN_ID, (int) xrnid, Store.YES));
+        doc.add(new StringField(FIELD_RXN_ID, id, Store.YES));
         // doc.add(new StoredField(FIELD_FP_COUNTS, FingerprintUtil.countsToCsv(counts)));
         IReaction rxn = SmilesXMol.reaction(smiles);
         IReactionFingerprinter<Integer> fingerprinter = new ReactionFingerprinter<Integer>();
@@ -66,31 +64,10 @@ public class Indexer implements AutoCloseable {
         writer.addDocument(doc);
         // System.out.println(smiles);      
       } catch (Exception e) {
-             System.err.println(smiles + " error " + xrnid);
+             System.err.println(smiles + " error " + id);
              e.printStackTrace();
             //  throw new RuntimeException(e);
         }
-    }
-
-    public void addAll(List<String> smilesList) throws Exception {
-        AtomicInteger i = new AtomicInteger(0);
-        smilesList.parallelStream().forEach(s -> {
-            try {
-                int id = i.getAndIncrement();
-                addReaction(s, id);
-                if (id % 10000 == 0) {
-                    System.out.print(".");
-                }
-                if (id % 100000 == 0) {
-                    System.out.println();
-                    System.out.print(id);
-                }
-
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        });
-        writer.commit();
     }
 
     public void addAll(Stream<InputReaction> reactions) throws Exception {

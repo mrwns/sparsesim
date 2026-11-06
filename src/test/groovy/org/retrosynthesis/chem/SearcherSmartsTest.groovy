@@ -20,9 +20,9 @@ class SearcherSmartsTest extends Specification {
         tempDir = Files.createTempDirectory("searcher-smarts-test")
 
         def indexer = new ComplexIndexer(tempDir)
-        indexer.addReaction(RXN_HYDROLYSIS, 1)
-        indexer.addReaction(RXN_COUPLING, 2)
-        indexer.addReaction(RXN_FLUORO_AMINATION, 3)
+        indexer.addReaction(RXN_HYDROLYSIS, "1")
+        indexer.addReaction(RXN_COUPLING, "2")
+        indexer.addReaction(RXN_FLUORO_AMINATION, "3")
         indexer.close()
     }
 
@@ -39,7 +39,7 @@ class SearcherSmartsTest extends Specification {
         then:
         results.size() == 1
         results.size() < 5
-        results*.xid == [3]
+        results*.xid == ["3"]
         results*.smiles == [RXN_FLUORO_AMINATION]
     }
 
@@ -53,7 +53,7 @@ class SearcherSmartsTest extends Specification {
         }
 
         then:
-        nullResults*.xid == [3, 2]
+        nullResults*.xid == ["3", "2"]
         blankResults*.xid == nullResults*.xid
         blankResults*.smiles == nullResults*.smiles
     }

@@ -20,16 +20,20 @@ The JAR will be in `build/libs/`.
 
 Indexing runs in the Spring profile **`indexer`** via `org.retrosynthesis.cli.CliIndexerRunner`.
 
-- **Input file**: one reaction SMILES per line (blank lines and `#` comments are ignored)
+- **Input file**: one reaction SMILES per line, optionally followed by whitespace (space or tab) and an ID (blank lines and `#` comments are ignored)
 - **Output**: a directory containing the Lucene index
+
+Each reaction keeps the ID given on its line; a line without one gets `rxn_<i>`, `i` being the reaction's 0-based position in the file (blank and comment lines are not counted). IDs are returned as `xid` in search results and must be unique: the indexer checks all of them, supplied and generated, before indexing anything, and exits with code 2 listing the duplicates otherwise.
 
 Example input file `reactions.smi`:
 
 ```text
-# one reaction SMILES per line
-CCO.O=O>>CC(=O)O
+# reaction SMILES, optionally followed by an ID
+CCO.O=O>>CC(=O)O    US20010000001;12
 CCBr.O>>CCO
 ```
+
+Here the second reaction gets the ID `rxn_1`.
 
 Run the indexer:
 
@@ -123,7 +127,7 @@ Response: a JSON array of arrays (one inner array per input SMILES). Each elemen
     {
       "smiles": "CCO.O=O>>CC(=O)O",
       "sim": 0.87,
-      "xid": 42,
+      "xid": "rxn_42",
       "similarities": {
         "ecfp4": 0.91,
         "path_6": 0.83
@@ -137,7 +141,7 @@ Response: a JSON array of arrays (one inner array per input SMILES). Each elemen
 |----------------|---------------------|--------------------------------------------------------------------|
 | `smiles`       | `string`            | Matched reaction SMILES                                            |
 | `sim`          | `number`            | Overall similarity score (average of the individual fingerprints)  |
-| `xid`          | `integer`           | Internal index ID of the matched reaction                          |
+| `xid`          | `string`            | ID of the matched reaction: as given in the input file, or `rxn_<i>` |
 | `similarities` | `map<string,number>` | Per-fingerprint Tanimoto scores: reaction `ecfp4` and `path_6`, plus product `ecfp_prod` with `productsim` |
 
 ## Docker (optional)

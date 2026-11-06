@@ -82,7 +82,7 @@ Each **result object** has:
 |--------|------|-------------|
 | `smiles` | `string` | Matched reaction SMILES from the index. |
 | `sim` | `number` | When `productsim=false`: \((\text{ecfp4} + \text{path}_6) / 2\). When `productsim=true`: \((1 - \text{productBoost}) \cdot \text{reaction\_score} + \text{productBoost} \cdot \text{ecfp\_prod}\), where `reaction_score` is the same mean of `ecfp4` and `path_6`. |
-| `xid` | `integer` | Document / reaction id stored in the index. |
+| `xid` | `string` | ID of the matched reaction: as given in the input file when indexing, or `rxn_<i>` (its 0-based position in the file). |
 | `similarities` | `object` | Always includes `ecfp4` and `path_6` (path depth in the key, e.g. `path_6`). When `productsim=true`, also includes `ecfp_prod` (product ECFP4 Tanimoto vs. the query reaction’s main product). |
 
 Example:
@@ -93,7 +93,7 @@ Example:
     {
       "smiles": "CCO.O=O>>CC(=O)O",
       "sim": 0.87,
-      "xid": 42,
+      "xid": "rxn_42",
       "similarities": {
         "ecfp4": 0.91,
         "path_6": 0.83
@@ -111,7 +111,7 @@ With `productsim=true`, each result additionally carries `ecfp_prod` and `sim` r
     {
       "smiles": "CCO.O=O>>CC(=O)O",
       "sim": 0.88,
-      "xid": 42,
+      "xid": "rxn_42",
       "similarities": {
         "ecfp4": 0.91,
         "path_6": 0.83,
@@ -211,7 +211,7 @@ Same shape as `/reactions/similarity/by-reaction`: `List<List<Result>>` (outer l
 |--------|------|-------------|
 | `smiles` | `string` | Matched reaction SMILES from the index. |
 | `sim` | `number` | ECFP4 Tanimoto between query molecule and the matched reaction's product. |
-| `xid` | `integer` | Document / reaction id stored in the index. |
+| `xid` | `string` | ID of the matched reaction: as given in the input file when indexing, or `rxn_<i>` (its 0-based position in the file). |
 | `similarities` | `object` | `{"ecfp_prod": <number>}`. |
 
 ## Example `curl`

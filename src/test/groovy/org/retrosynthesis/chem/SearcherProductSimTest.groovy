@@ -23,9 +23,9 @@ class SearcherProductSimTest extends Specification {
         tempDir = Files.createTempDirectory("searcher-productsim-test")
 
         def indexer = new ComplexIndexer(tempDir)
-        indexer.addReaction(RXN_HYDROLYSIS, 1)
-        indexer.addReaction(RXN_COUPLING, 2)
-        indexer.addReaction(RXN_FLUORO_AMINATION, 3)
+        indexer.addReaction(RXN_HYDROLYSIS, "1")
+        indexer.addReaction(RXN_COUPLING, "2")
+        indexer.addReaction(RXN_FLUORO_AMINATION, "3")
         indexer.close()
     }
 
@@ -57,7 +57,7 @@ class SearcherProductSimTest extends Specification {
         results.every { it.similarities().containsKey("ecfp4") }
         results.every { it.similarities().containsKey("path_6") }
         results.every { it.similarities().containsKey("ecfp_prod") }
-        results[0].xid() == 3
+        results[0].xid() == "3"
     }
 
     def "productsim=true, productBoost=0 keeps sim equal to reaction-only blend"() {
@@ -131,7 +131,7 @@ class SearcherProductSimTest extends Specification {
         }
 
         then:
-        results[0].xid() == 3
+        results[0].xid() == "3"
         results[0].similarities().get("ecfp_prod") >= 0.99d
     }
 }

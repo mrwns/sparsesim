@@ -56,11 +56,11 @@ public class ComplexIndexer implements AutoCloseable {
     }
 
     public void addReaction(InputReaction reaction) throws Exception {
-        addReaction(reaction.smiles(), reaction.xrnid());
+        addReaction(reaction.smiles(), reaction.id());
     }
 
 
-    public void addReaction(String smiles, long xrnid) throws Exception {
+    public void addReaction(String smiles, String id) throws Exception {
         try {
         
         IReaction rxn = SmilesXMol.reaction(smiles);
@@ -79,7 +79,7 @@ public class ComplexIndexer implements AutoCloseable {
         var doc = new Document();
         
         doc.add(new StoredField(FieldNames.FIELD_RXN_SMILES, smiles));
-        doc.add(new IntField(FieldNames.FIELD_RXN_ID, (int) xrnid, Store.YES));
+        doc.add(new StringField(FieldNames.FIELD_RXN_ID, id, Store.YES));
 
         // doc.add(new StoredField(FIELD_FP_COUNTS, FingerprintUtil.countsToCsv(counts)));
         
@@ -113,24 +113,25 @@ public class ComplexIndexer implements AutoCloseable {
         writer.addDocument(doc);
          
       } catch (Exception e) {
-             System.err.println(smiles + " error " + xrnid);
+             System.err.println(smiles + " error " + id);
              e.printStackTrace();
             //  throw new RuntimeException(e);
         }
         
     }
 
-    public void addAll(List<String> smilesList) throws Exception {
-        AtomicInteger i = new AtomicInteger(0);
-        smilesList.parallelStream().forEach(s -> {
+    /** Indexes reactions in parallel; each keeps the ID it comes with. */
+    public void addAll(List<InputReaction> reactions) throws Exception {
+        AtomicInteger done = new AtomicInteger(0);
+        reactions.parallelStream().forEach(r -> {
             try {
-                int id = i.getAndIncrement();
-                addReaction(s, id);
-                if (id > 0 && id % 5000 == 0) {
+                addReaction(r);
+                int n = done.incrementAndGet();
+                if (n % 5000 == 0) {
                     System.out.print(".");
                 }
-                if (id > 0 && (id % 250000 == 0)) {
-                    System.out.print(String.format("%12s", id));
+                if (n % 250000 == 0) {
+                    System.out.print(String.format("%12s", n));
                     System.out.println();
                 }
 

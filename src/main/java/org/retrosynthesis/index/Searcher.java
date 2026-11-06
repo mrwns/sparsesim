@@ -192,7 +192,7 @@ public class Searcher implements AutoCloseable {
             Document d = searcher.doc(sd.doc);
 
             String ressmiles = d.get(FIELD_RXN_SMILES);
-            int xid = Integer.parseInt(d.get(FIELD_RXN_ID));
+            String xid = d.get(FIELD_RXN_ID);
             IReaction resrxn = SmilesXMol.reaction(ressmiles);
 
             if (!rxnSmartsFilter.filter(resrxn)) {
@@ -291,7 +291,7 @@ public class Searcher implements AutoCloseable {
             Document d = searcher.doc(sd.doc);
 
             String ressmiles = d.get(FIELD_RXN_SMILES);
-            int xid = Integer.parseInt(d.get(FIELD_RXN_ID));
+            String xid = d.get(FIELD_RXN_ID);
             IReaction resrxn = SmilesXMol.reaction(ressmiles);
             ICountFingerprint fp = ecfpRxnFpr.getCountFingerprint(resrxn);
             ICountFingerprint pathfp = pathRxnFpr.getCountFingerprint(resrxn);

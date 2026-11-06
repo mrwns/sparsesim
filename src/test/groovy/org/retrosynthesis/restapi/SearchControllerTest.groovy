@@ -36,8 +36,8 @@ class SearchControllerTest extends Specification {
     static Path buildIndex() {
         Path dir = Files.createTempDirectory("search-controller-test")
         def indexer = new ComplexIndexer(dir)
-        indexer.addReaction(RXN_COUPLING, 1)
-        indexer.addReaction(RXN_HYDROLYSIS, 2)
+        indexer.addReaction(RXN_COUPLING, "US123;coupling")
+        indexer.addReaction(RXN_HYDROLYSIS, "hydrolysis")
         indexer.close()
         return dir
     }
@@ -77,6 +77,7 @@ class SearchControllerTest extends Specification {
         response.status == 200
         def top = json(response)[0][0]
         top.smiles == RXN_COUPLING
+        top.xid == "US123;coupling"
         top.sim == 1.0d
         top.similarities.keySet() == ["ecfp4", "path_6"] as Set
     }

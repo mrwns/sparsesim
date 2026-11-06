@@ -49,16 +49,16 @@ class IndexerTest extends Specification {
         Indexer indexer = new Indexer(tempDir);
 
         // add reactions to index
-        indexer.addReaction(rxn1, 1);
-        indexer.addReaction(rxn2, 2);
-        indexer.addReaction(rxn3, 3);
-        indexer.addReaction(rxn4, 4);
-        indexer.addReaction(rxn5, 5);
-        indexer.addReaction(rxn6, 6);
-        indexer.addReaction(rxn7, 7);
-        indexer.addReaction(rxn8, 8);
-        indexer.addReaction(rxn5a, 9);
-        indexer.addReaction(rxn9, 10);
+        indexer.addReaction(rxn1, "1");
+        indexer.addReaction(rxn2, "2");
+        indexer.addReaction(rxn3, "3");
+        indexer.addReaction(rxn4, "4");
+        indexer.addReaction(rxn5, "5");
+        indexer.addReaction(rxn6, "6");
+        indexer.addReaction(rxn7, "7");
+        indexer.addReaction(rxn8, "8");
+        indexer.addReaction(rxn5a, "9");
+        indexer.addReaction(rxn9, "10");
 
         indexer.close();
 

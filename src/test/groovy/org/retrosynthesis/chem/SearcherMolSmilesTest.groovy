@@ -26,9 +26,9 @@ class SearcherMolSmilesTest extends Specification {
         tempDir = Files.createTempDirectory("searcher-molsmiles-test")
 
         def indexer = new ComplexIndexer(tempDir)
-        indexer.addReaction(RXN_HYDROLYSIS, 1)
-        indexer.addReaction(RXN_COUPLING, 2)
-        indexer.addReaction(RXN_FLUORO_AMINATION, 3)
+        indexer.addReaction(RXN_HYDROLYSIS, "1")
+        indexer.addReaction(RXN_COUPLING, "2")
+        indexer.addReaction(RXN_FLUORO_AMINATION, "3")
         indexer.close()
     }
 
@@ -44,7 +44,7 @@ class SearcherMolSmilesTest extends Specification {
 
         then:
         !results.isEmpty()
-        results[0].xid() == 3
+        results[0].xid() == "3"
         results[0].smiles() == RXN_FLUORO_AMINATION
         results[0].sim() >= 0.99d
         results[0].similarities().keySet() == ["ecfp_prod"] as Set
@@ -57,7 +57,7 @@ class SearcherMolSmilesTest extends Specification {
         }
 
         then:
-        results*.xid() == [3]
+        results*.xid() == ["3"]
     }
 
     def "rxnSmarts filter drops reactions whose full-reaction SMARTS does not match"() {
@@ -67,7 +67,7 @@ class SearcherMolSmilesTest extends Specification {
         }
 
         then: "only the fluoro-amination reaction contains fluorine"
-        results*.xid() == [3]
+        results*.xid() == ["3"]
     }
 
     def "blank or null rxnSmarts leaves candidate set unfiltered"() {

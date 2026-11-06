@@ -1,6 +1,7 @@
 package org.retrosynthesis.cli;
 
 import org.retrosynthesis.index.ComplexIndexer;
+import org.retrosynthesis.index.InputReaction;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
@@ -10,7 +11,6 @@ import org.springframework.stereotype.Component;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Component
 @Profile("indexer")
@@ -42,25 +42,33 @@ public class CliIndexerRunner implements ApplicationRunner {
             System.exit(2);
         }
 
-        Files.createDirectories(indexPath);
-
         if (limitProp <=0 ) {
             limitProp = Long.MAX_VALUE;
         }
 
-        List<String> smilesList = Files.lines(smilesFile)
-                .map(String::trim)
-                .limit(limitProp)
-                .filter(s -> !s.isEmpty())
-                .filter(s -> !s.startsWith("#"))
-                .collect(Collectors.toList());
+        List<String> lines;
+        try (var stream = Files.lines(smilesFile)) {
+            lines = stream.limit(limitProp).toList();
+        }
+
+        // Validate every ID before touching the index, so a bad input file leaves nothing behind.
+        List<InputReaction> reactions;
+        try {
+            reactions = InputReaction.fromLines(lines);
+        } catch (IllegalArgumentException e) {
+            System.err.println(smilesFile + ": " + e.getMessage());
+            System.exit(2);
+            return;
+        }
+
+        Files.createDirectories(indexPath);
 
         long start = System.currentTimeMillis();
         try (ComplexIndexer indexer = new ComplexIndexer(indexPath)) {
-            indexer.addAll(smilesList);
+            indexer.addAll(reactions);
         }
         long end = System.currentTimeMillis();
-        System.out.println("Indexed " + smilesList.size() + " reactions to " + indexPath + " in " + (end - start)/1000 + " s");
+        System.out.println("Indexed " + reactions.size() + " reactions to " + indexPath + " in " + (end - start)/1000 + " s");
 
         // Exit after CLI run to avoid starting the web server in this mode
         System.exit(0);
