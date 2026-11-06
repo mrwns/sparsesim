@@ -1,6 +1,7 @@
 package org.retrosynthesis.cli;
 
 import org.retrosynthesis.index.ComplexIndexer;
+import org.retrosynthesis.index.IndexingFailure;
 import org.retrosynthesis.index.InputReaction;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationArguments;
@@ -15,6 +16,9 @@ import java.util.List;
 @Component
 @Profile("indexer")
 public class CliIndexerRunner implements ApplicationRunner {
+
+    /** Reactions that could not be indexed, written inside the index directory. */
+    static final String ERR_FILE = "index.err";
 
     @Value("${smiles:}")
     private String smilesFileProp;
@@ -64,11 +68,16 @@ public class CliIndexerRunner implements ApplicationRunner {
         Files.createDirectories(indexPath);
 
         long start = System.currentTimeMillis();
+        List<IndexingFailure> failures;
         try (ComplexIndexer indexer = new ComplexIndexer(indexPath)) {
-            indexer.addAll(reactions);
+            failures = indexer.addAll(reactions);
         }
+        Path errFile = indexPath.resolve(ERR_FILE);
+        IndexingFailure.writeTsv(errFile, failures);
         long end = System.currentTimeMillis();
-        System.out.println("Indexed " + reactions.size() + " reactions to " + indexPath + " in " + (end - start)/1000 + " s");
+        System.out.println("Indexed " + (reactions.size() - failures.size()) + " of " + reactions.size() + " reactions to "
+                + indexPath + " in " + (end - start)/1000 + " s; " + failures.size() + " failed"
+                + (failures.isEmpty() ? "" : ", see " + errFile));
 
         // Exit after CLI run to avoid starting the web server in this mode
         System.exit(0);

@@ -19,13 +19,16 @@ import org.retrosynthesis.chem.SmilesXMol;
 
 import static org.retrosynthesis.index.FieldNames.*;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.BitSet;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Stream;
+import java.util.stream.IntStream;
 
 
 public class ComplexIndexer implements AutoCloseable {
@@ -61,8 +64,11 @@ public class ComplexIndexer implements AutoCloseable {
 
 
     public void addReaction(String smiles, String id) throws Exception {
-        try {
-        
+        writer.addDocument(document(smiles, id));
+    }
+
+    /** Parses and fingerprints a reaction; throws if it cannot be parsed or fingerprinted. */
+    private static Document document(String smiles, String id) throws Exception {
         IReaction rxn = SmilesXMol.reaction(smiles);
 
         final IChemObjectBuilder bldr = rxn.getBuilder();
@@ -110,50 +116,43 @@ public class ComplexIndexer implements AutoCloseable {
 
         doc.add(new Field(FIELD_PRODFPT_ECFP, ts3, COUNT_FT));
 
-        writer.addDocument(doc);
-         
-      } catch (Exception e) {
-             System.err.println(smiles + " error " + id);
-             e.printStackTrace();
-            //  throw new RuntimeException(e);
-        }
-        
+        return doc;
     }
 
-    /** Indexes reactions in parallel; each keeps the ID it comes with. */
-    public void addAll(List<InputReaction> reactions) throws Exception {
+    /**
+     * Indexes reactions in parallel; each keeps the ID it comes with. A reaction that cannot be parsed or
+     * fingerprinted is skipped and returned as a failure, in input order. Index write errors abort.
+     */
+    public List<IndexingFailure> addAll(List<InputReaction> reactions) throws IOException {
+        Map<Integer, IndexingFailure> failures = new ConcurrentSkipListMap<>();
         AtomicInteger done = new AtomicInteger(0);
-        reactions.parallelStream().forEach(r -> {
+        IntStream.range(0, reactions.size()).parallel().forEach(i -> {
+            InputReaction r = reactions.get(i);
+            Document doc;
             try {
-                addReaction(r);
-                int n = done.incrementAndGet();
-                if (n % 5000 == 0) {
-                    System.out.print(".");
-                }
-                if (n % 250000 == 0) {
-                    System.out.print(String.format("%12s", n));
-                    System.out.println();
-                }
-
+                doc = document(r.smiles(), r.id());
             } catch (Exception e) {
-                throw new RuntimeException(e);
+                failures.put(i, IndexingFailure.of(r, e));
+                return;
+            }
+            try {
+                writer.addDocument(doc);
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+            int n = done.incrementAndGet();
+            if (n % 5000 == 0) {
+                System.out.print(".");
+            }
+            if (n % 250000 == 0) {
+                System.out.print(String.format("%12s", n));
+                System.out.println();
             }
         });
         System.out.println();
         writer.forceMerge(1);  // collapse to single segment for faster reads
         writer.commit();
-    }
-
-    public void addAll(Stream<InputReaction> reactions) throws Exception {
-        reactions.forEach(r -> {
-            try {
-                addReaction(r);
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        });
-        writer.forceMerge(1);  // collapse to single segment for faster reads
-        writer.commit();
+        return List.copyOf(failures.values());
     }
 
     @Override public void close() throws Exception { writer.close(); dir.close(); }

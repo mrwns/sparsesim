@@ -50,6 +50,8 @@ Notes:
 - **`--indexdir`**: directory to create/write the index into
 - **`--limit`**: optional max number of lines to index (defaults to all)
 
+A reaction that cannot be parsed or fingerprinted is skipped and logged to `index.err` inside the index directory, one tab-separated `ID  SMILES  error` line per reaction; the rest is indexed. The file is always rewritten (empty when nothing failed), and the run ends with a summary such as `Indexed 39990 of 40008 reactions to ./index in 17 s; 18 failed, see ./index/index.err`.
+
 ## Serve the index
 
 Serving uses the Spring profile **`web`**. The app loads a single shared `Searcher` bean (see `org.retrosynthesis.config.SearcherConfig`); both REST and optional MCP use that index.
