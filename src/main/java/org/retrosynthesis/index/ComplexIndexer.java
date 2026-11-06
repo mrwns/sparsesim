@@ -36,6 +36,7 @@ public class ComplexIndexer implements AutoCloseable {
     
     private final Directory dir;
     private final IndexWriter writer;
+    private final AtomicInteger indexed = new AtomicInteger(0);
     private static final FieldType COUNT_FT;
     private static final FieldType BINARY_FT;
 
@@ -123,12 +124,12 @@ public class ComplexIndexer implements AutoCloseable {
     }
 
     /**
-     * Indexes reactions in parallel; each keeps the ID it comes with. A reaction that cannot be parsed or
-     * fingerprinted is skipped and returned as a failure, in input order. Index write errors abort.
+     * Indexes a batch of reactions in parallel; each keeps the ID it comes with. A reaction that cannot be parsed or
+     * fingerprinted is skipped and returned as a failure, in batch order. Index write errors abort. Call
+     * {@link #commit()} after the last batch.
      */
-    public List<IndexingFailure> addAll(List<InputReaction> reactions) throws IOException {
+    public List<IndexingFailure> add(List<InputReaction> reactions) {
         Map<Integer, IndexingFailure> failures = new ConcurrentSkipListMap<>();
-        AtomicInteger done = new AtomicInteger(0);
         IntStream.range(0, reactions.size()).parallel().forEach(i -> {
             InputReaction r = reactions.get(i);
             Document doc;
@@ -143,7 +144,7 @@ public class ComplexIndexer implements AutoCloseable {
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
             }
-            int n = done.incrementAndGet();
+            int n = indexed.incrementAndGet();
             if (n % 5000 == 0) {
                 System.out.print(".");
             }
@@ -152,10 +153,21 @@ public class ComplexIndexer implements AutoCloseable {
                 System.out.println();
             }
         });
-        System.out.println();
-        writer.forceMerge(1);  // collapse to single segment for faster reads
-        writer.commit();
         return List.copyOf(failures.values());
+    }
+
+    /** Merges the index into a single segment, for faster reads, and commits it. */
+    public void commit() throws IOException {
+        System.out.println();
+        writer.forceMerge(1);
+        writer.commit();
+    }
+
+    /** {@link #add} then {@link #commit}. */
+    public List<IndexingFailure> addAll(List<InputReaction> reactions) throws IOException {
+        List<IndexingFailure> failures = add(reactions);
+        commit();
+        return failures;
     }
 
     @Override public void close() throws Exception { writer.close(); dir.close(); }

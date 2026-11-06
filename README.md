@@ -50,6 +50,8 @@ Notes:
 - **`--indexdir`**: directory to create/write the index into
 - **`--limit`**: optional max number of lines to index (defaults to all)
 
+The input is read one line at a time, twice: first to check the IDs, then to index the reactions in batches of 10,000. Memory use therefore does not grow with the file, apart from the IDs kept for the uniqueness check (roughly 100 bytes per reaction).
+
 Stored reactions are written with Lucene's `BEST_COMPRESSION` mode, which keeps the index about 15% smaller (roughly 500 bytes per reaction) at no measurable cost to search time.
 
 A reaction that cannot be parsed or fingerprinted is skipped and logged to `index.err` inside the index directory, one tab-separated `ID  SMILES  error` line per reaction; the rest is indexed. The file is always rewritten (empty when nothing failed), and the run ends with a summary such as `Indexed 39990 of 40008 reactions to ./index in 17 s; 18 failed, see ./index/index.err`.
