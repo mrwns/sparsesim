@@ -1,4 +1,4 @@
-FROM eclipse-temurin:19-jdk-jammy AS build
+FROM eclipse-temurin:21-jdk-noble AS build
 
 WORKDIR /app
 
@@ -21,7 +21,7 @@ COPY src src
 RUN ./gradlew bootJar --no-daemon --parallel --build-cache
 
 # Runtime stage
-FROM eclipse-temurin:19-jre-jammy
+FROM eclipse-temurin:21-jre-noble
 
 WORKDIR /app
 

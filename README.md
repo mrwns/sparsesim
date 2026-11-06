@@ -4,7 +4,7 @@ Sparse similarity search for reaction SMILES using a Lucene index.
 
 ## Requirements
 
-- **Java 19** (project uses Gradle toolchains; see `build.gradle`)
+- **Java 21** (project uses Gradle toolchains; see `build.gradle`)
 
 ## Build
 
