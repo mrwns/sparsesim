@@ -49,8 +49,16 @@ public class Searcher implements AutoCloseable {
     
 
     public Searcher(Path indexDir) throws Exception {
+        this(indexDir, false);
+    }
+
+    /**
+     * @param preload read the whole index into the OS page cache when opening it. Otherwise pages are read on demand
+     *                as queries touch them (and stay cached), so memory use follows what is actually searched.
+     */
+    public Searcher(Path indexDir, boolean preload) throws Exception {
         var dir = new MMapDirectory(indexDir);
-        dir.setPreload(true);  // madvise(MADV_WILLNEED) - prefetch index into page cache
+        dir.setPreload(preload);
         this.reader = DirectoryReader.open(dir);
         this.searcher = new IndexSearcher(reader);
         this.searcher.setSimilarity(similarity);

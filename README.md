@@ -70,7 +70,7 @@ java -jar build/libs/*.jar \
   --indexdir=./index
 ```
 
-By default Spring Boot serves on `http://localhost:8080`. `GET /actuator/health` reports `UP` once the index is loaded and `GET /actuator/info` reports the number of indexed reactions.
+By default Spring Boot serves on `http://localhost:8080`. The index is memory-mapped and read on demand: only the parts that queries touch are loaded, into the OS page cache rather than the Java heap. Pass `--preload=true` (or set `INDEX_PRELOAD=true`) to read the whole index into memory at startup instead; on local disk this made no measurable difference to query latency. `GET /actuator/health` reports `UP` once the index is loaded and `GET /actuator/info` reports the number of indexed reactions.
 
 ### MCP server (optional)
 

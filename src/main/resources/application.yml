@@ -25,6 +25,8 @@ management:
 
 # Default index directory (can be overridden via environment variable)
 indexdir: ${INDEX_DIR:/app/index}
+# Read the whole index into memory at startup; by default pages are read on demand.
+preload: ${INDEX_PRELOAD:false}
 
 ---
 spring:

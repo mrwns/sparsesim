@@ -18,7 +18,7 @@ public class SearcherConfig {
     private static final Logger logger = LoggerFactory.getLogger(SearcherConfig.class);
 
     @Bean(destroyMethod = "close")
-    public Searcher searcher(@Value("${indexdir}") String indexDir) throws Exception {
+    public Searcher searcher(@Value("${indexdir}") String indexDir, @Value("${preload}") boolean preload) throws Exception {
         if (indexDir == null || indexDir.isEmpty()) {
             throw new IllegalArgumentException("Property 'indexdir' must be set");
         }
@@ -26,7 +26,8 @@ public class SearcherConfig {
         if (!Files.exists(path)) {
             throw new IllegalArgumentException("Index directory does not exist: " + indexDir);
         }
-        Searcher searcher = new Searcher(path);
+        Searcher searcher = new Searcher(path, preload);
+        logger.info("Opened index {} (preload={})", path, preload);
         long t0 = System.currentTimeMillis();
         searcher.warmup();
         logger.info("Index warmup completed in {} ms", System.currentTimeMillis() - t0);
